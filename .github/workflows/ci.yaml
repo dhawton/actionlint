@@ -30,9 +30,13 @@ jobs:
         if: ${{ runner.os == 'Linux' }}
       - name: Install dependencies on Windows
         run: |
-          winget install --id koalaman.shellcheck --disable-interactivity --accept-package-agreements --accept-source-agreements
+          # windows-11-arm has no winget; shellcheck tests skip there
+          if (Get-Command winget -ErrorAction SilentlyContinue) {
+            winget install --id koalaman.shellcheck --disable-interactivity --accept-package-agreements --accept-source-agreements
+          }
           pip install pyflakes
           pyflakes --version
+        shell: pwsh
         if: ${{ runner.os == 'Windows' }}
       - uses: actions/checkout@v6
       - uses: actions/setup-go@v6
