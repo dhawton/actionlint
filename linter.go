@@ -555,7 +555,7 @@ func (l *Linter) check(
 		l.debug("No config was found")
 	}
 
-	w, all := Parse(content)
+	w, root, all := parseWithNode(content)
 
 	if l.logLevel >= LogLevelVerbose {
 		elapsed := time.Since(start)
@@ -642,6 +642,7 @@ func (l *Linter) check(
 	}
 
 	all = l.filterErrors(all, cfg.PathConfigs(path))
+	all = l.filterInlineIgnores(all, parseInlineIgnores(content, root))
 
 	for _, err := range all {
 		err.Filepath = path // Populate filename in the error
@@ -680,6 +681,21 @@ Loop:
 	}
 	if len(filtered) != len(errs) {
 		l.log("Filtered", len(errs)-len(filtered), "error(s) due to \"-ignore\" command line option and \"ignore\" configuration")
+	}
+	return filtered
+}
+
+func (l *Linter) filterInlineIgnores(errs []*Error, ig inlineIgnores) []*Error {
+	if len(ig) == 0 {
+		return errs
+	}
+	filtered := make([]*Error, 0, len(errs))
+	for _, err := range errs {
+		if ig.match(err) {
+			l.debug("Error %q is ignored due to \"actionlint-ignore\" comment at line %d", err.Message, err.Line)
+			continue
+		}
+		filtered = append(filtered, err)
 	}
 	return filtered
 }

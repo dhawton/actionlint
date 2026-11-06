@@ -1736,10 +1736,15 @@ func handleYAMLUnmarshalError(err error) []*Error {
 // detected while parsing the input. It means that detecting one error does not stop parsing. Even
 // if one or more errors are detected, parser will try to continue parsing and finding more errors.
 func Parse(b []byte) (*Workflow, []*Error) {
+	w, _, errs := parseWithNode(b)
+	return w, errs
+}
+
+func parseWithNode(b []byte) (*Workflow, *yaml.Node, []*Error) {
 	var n yaml.Node
 
 	if err := yaml.Unmarshal(b, &n); err != nil {
-		return nil, handleYAMLUnmarshalError(err)
+		return nil, nil, handleYAMLUnmarshalError(err)
 	}
 
 	// Uncomment for checking YAML tree
@@ -1748,5 +1753,5 @@ func Parse(b []byte) (*Workflow, []*Error) {
 	p := &parser{}
 	w := p.parse(&n)
 
-	return w, p.errors
+	return w, &n, p.errors
 }

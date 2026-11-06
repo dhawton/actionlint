@@ -1,0 +1,54 @@
+on: push
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      # Ignored by a comment at the end of the line
+      - run: echo ${{ foo }} # actionlint-ignore: expression
+      # Ignored by a comment on the previous line
+      # actionlint-ignore: expression
+      - run: echo ${{ foo }}
+      # Other comments between the directive and the target line are skipped
+      # actionlint-ignore: expression
+      # some other comment
+      - run: echo ${{ foo }}
+      # Multiple rules
+      # actionlint-ignore: deprecated-commands, expression
+      - run: echo "::set-output name=x::${{ foo }}"
+      # ERROR: Only the listed rule is ignored
+      # actionlint-ignore: deprecated-commands
+      - run: echo "::set-output name=x::${{ foo }}"
+      # ERROR: Wrong rule is not ignored
+      # actionlint-ignore: shellcheck
+      - run: echo ${{ foo }}
+      # ERROR: The directive only applies to the next line
+      # actionlint-ignore: expression
+      - run: echo ${{ foo }}
+        env:
+          FOO: ${{ foo }}
+      # ERROR: A blank line breaks the directive
+      # actionlint-ignore: expression
+
+      - run: echo ${{ foo }}
+      # ERROR: Directive in a quoted string is not a comment
+      - run: "echo ${{ foo }} # actionlint-ignore: expression"
+      # ERROR: Directive inside a script is not a YAML comment
+      - run: |
+          # actionlint-ignore: expression
+          echo ${{ foo }}
+      # A directive on the block scalar header covers the whole script
+      - run: | # actionlint-ignore: expression
+          echo hello
+          echo ${{ foo }}
+      # The same applies to a directive on the previous line
+      # actionlint-ignore: expression
+      - run: >-
+          echo hello
+          ${{ foo }}
+        shell: bash
+      # ERROR: Not covered since this line is outside the block scalar
+      # actionlint-ignore: expression
+      - run: |
+          echo hello
+        shell: ${{ foo }}

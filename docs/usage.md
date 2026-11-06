@@ -34,6 +34,33 @@ The regular expression syntax is the same as [RE2][re2].
 actionlint -ignore 'label ".+" is unknown' -ignore '".+" is potentially untrusted'
 ```
 
+To ignore errors on a specific line, put an `actionlint-ignore:` comment with one or more rule names separated by commas.
+The rule name is the one shown in brackets at the end of each error message, like `[expression]`. A comment at the end of
+a line ignores errors reported on that line. A comment on its own line ignores errors reported on the next line which is
+not a comment.
+
+```yaml
+steps:
+  - run: echo '${{ github.event.pull_request.title }}' # actionlint-ignore: expression
+  # actionlint-ignore: expression, deprecated-commands
+  - run: echo "::set-output name=title::${{ github.event.pull_request.title }}"
+```
+
+When the target line starts a block scalar like `run: |`, errors anywhere in the block are ignored. This is how errors
+in multi-line scripts are ignored since a comment cannot be put inside the script. `# actionlint-ignore:` lines inside a
+block scalar are part of the script, not YAML comments, so they are not treated as directives.
+
+```yaml
+steps:
+  # actionlint-ignore: shellcheck
+  - run: |
+      echo hello
+      echo $FOO
+```
+
+Unknown rule names are silently ignored. To ignore only some shellcheck rules, use shellcheck's own
+`# shellcheck disable=SC2086` directive in the script instead.
+
 `-shellcheck` and `-pyflakes` specifies file paths of executables. Setting empty string to them disables `shellcheck` and
 `pyflakes` rules. As a bonus, disabling them makes actionlint much faster Since these external linter integrations spawn many
 processes.
