@@ -1,0 +1,18 @@
+on: push
+
+permissions:
+  code-quality: read
+
+jobs:
+  test_job:
+    runs-on: ubuntu-latest
+    permissions:
+      code-quality: write
+    steps:
+      - run: echo hello
+  no_access:
+    runs-on: ubuntu-latest
+    permissions:
+      code-quality: none
+    steps:
+      - run: echo hello
