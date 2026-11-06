@@ -149,13 +149,19 @@ func (rule *RuleExpression) VisitWorkflowPre(n *Workflow) error {
 			// When no secret is passed, secrets may be inherited from a caller of the workflow.
 			// So `secrets` context must be typed as { string => string }. `e.Secrets` is nil when `secrets:` does not
 			// exist. When `e.Secrets` is an empty map, `secrets:` exists but it has no child.
+			// When other events can also trigger the workflow, repository secrets are available on them so the
+			// declared secrets are not exhaustive.
 			if e.Secrets != nil {
-				sty := NewEmptyStrictObjectType()
-				for id, s := range e.Secrets {
-					sty.Props[id] = StringType{}
+				for _, s := range e.Secrets {
 					rule.checkString(s.Description, "")
 				}
-				rule.secretsTy = sty
+				if len(n.On) == 1 {
+					sty := NewEmptyStrictObjectType()
+					for id := range e.Secrets {
+						sty.Props[id] = StringType{}
+					}
+					rule.secretsTy = sty
+				}
 			}
 
 			for _, o := range e.Outputs {
@@ -1020,6 +1026,7 @@ func (rule *RuleExpression) checkWorkflowCallOutputs(outputs map[string]*Workflo
 		}
 		props[n] = NewStrictObjectType(map[string]ExprType{
 			"outputs": o,
+			"result":  StringType{},
 		})
 	}
 	rule.jobsTy = NewStrictObjectType(props)

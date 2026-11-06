@@ -92,6 +92,11 @@ func TestParseExpressionSyntaxOK(t *testing.T) {
 			expected: &FloatNode{Value: -99e-1},
 		},
 		{
+			what:     "float literal with positive exponent part",
+			input:    "-99e+1",
+			expected: &FloatNode{Value: -99e+1},
+		},
+		{
 			what:     "float literal with fraction and exponent part",
 			input:    "1.2e3",
 			expected: &FloatNode{Value: 1.2e3},
@@ -746,6 +751,46 @@ func TestParseExpressionSyntaxError(t *testing.T) {
 
 			if !strings.Contains(err.Error(), tc.expected) {
 				t.Fatalf("error message %q does not contain expected string %q", err.Error(), tc.expected)
+			}
+		})
+	}
+}
+
+func TestParseExpressionLargeIntegerLiterals(t *testing.T) {
+	// Node type depends on the size of int so only the value is checked.
+	testCases := []struct {
+		input string
+		want  float64
+	}{
+		{"2147483647", 2147483647},
+		{"2147483648", 2147483648},
+		{"-2147483649", -2147483649},
+		{"0xffffffff", 0xffffffff},
+		{"1700000000000", 1700000000000},
+		{"9223372036854775807", 9223372036854775807},
+		{"9223372036854775808", 9223372036854775808},
+		{"-9223372036854775809", -9223372036854775809},
+		{"0xffffffffffffffffff", 0xffffffffffffffffff},
+		{"-0xffffffffffffffffff", -0xffffffffffffffffff},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.input, func(t *testing.T) {
+			n, err := NewExprParser().Parse(NewExprLexer(tc.input + "}}"))
+			if err != nil {
+				t.Fatal(err)
+			}
+			var have float64
+			switch n := n.(type) {
+			case *IntNode:
+				have = float64(n.Value)
+			case *FloatNode:
+				have = n.Value
+			default:
+				t.Fatalf("wanted number literal node but got %T", n)
+			}
+			if have != tc.want {
+				t.Fatalf("wanted %v but got %v", tc.want, have)
 			}
 		})
 	}

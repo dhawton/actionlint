@@ -1,0 +1,15 @@
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo '${{ github.event.workflow_run.head_branch }}'
+      # OK: logins only allow alphanumerics and hyphens
+      - run: echo '${{ github.event.workflow_run.head_repository.owner.login }}'
+      # OK: passed via environment variable
+      - run: echo "$BRANCH"
+        env:
+          BRANCH: ${{ github.event.workflow_run.head_branch }}

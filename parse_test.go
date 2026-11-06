@@ -128,3 +128,42 @@ jobs:
 		t.Errorf("second step in parallel should run an action: %#v", par.Steps[1].Exec)
 	}
 }
+
+func TestParseContainerPortsAndVolumes(t *testing.T) {
+	src := `on: push
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    container:
+      image: node:18
+      ports: [8080]
+      volumes: [/foo:/bar]
+    services:
+      redis:
+        image: redis
+        volumes: [/redis:/data]
+        ports: [6379]
+    steps:
+      - run: echo
+`
+	w, errs := Parse([]byte(src))
+	if len(errs) > 0 {
+		t.Fatal(errs)
+	}
+
+	j := w.Jobs["test"]
+	for name, tc := range map[string]struct {
+		c            *Container
+		port, volume string
+	}{
+		"container": {j.Container, "8080", "/foo:/bar"},
+		"service":   {j.Services.Value["redis"].Container, "6379", "/redis:/data"},
+	} {
+		if len(tc.c.Ports) != 1 || tc.c.Ports[0].Value != tc.port {
+			t.Errorf("%s: unexpected ports: %v", name, tc.c.Ports)
+		}
+		if len(tc.c.Volumes) != 1 || tc.c.Volumes[0].Value != tc.volume {
+			t.Errorf("%s: unexpected volumes: %v", name, tc.c.Volumes)
+		}
+	}
+}
