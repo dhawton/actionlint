@@ -1119,6 +1119,9 @@ directly in a script, actionlint will report it as an error.
 - `github.event.pull_request.head.ref`
 - `github.event.pull_request.head.label`
 - `github.event.pull_request.head.repo.default_branch`
+- `github.event.discussion.title`
+- `github.event.discussion.body`
+- `github.event.workflow_run.head_branch`
 - `github.head_ref`
 
 Not only direct access to the untrusted properties, actionlint also detects those properties indirectly accessed via
