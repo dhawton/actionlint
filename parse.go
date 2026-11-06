@@ -1145,7 +1145,7 @@ func (p *parser) parseStepExecAction(entries []workflowMappingEntry, isDocker bo
 					ret.Inputs[e.id] = &Input{e.key, p.parseString(e.val, true)}
 				}
 			}
-		case "id", "if", "name", "env", "continue-on-error", "timeout-minutes":
+		case "id", "if", "name", "env", "continue-on-error", "timeout-minutes", "background":
 			// do nothing
 		default:
 			p.unexpectedKey(e.key, "step to execute action", []string{
@@ -1155,6 +1155,7 @@ func (p *parser) parseStepExecAction(entries []workflowMappingEntry, isDocker bo
 				"env",
 				"continue-on-error",
 				"timeout-minutes",
+				"background",
 				"uses",
 				"with",
 			})
@@ -1177,7 +1178,7 @@ func (p *parser) parseStepExecRun(entries []workflowMappingEntry) *ExecRun {
 			ret.Shell = p.parseString(e.val, false)
 		case "working-directory":
 			ret.WorkingDirectory = p.parseString(e.val, false)
-		case "id", "if", "name", "env", "continue-on-error", "timeout-minutes":
+		case "id", "if", "name", "env", "continue-on-error", "timeout-minutes", "background":
 			// do nothing
 		default:
 			p.unexpectedKey(e.key, "step to run shell command", []string{
@@ -1187,6 +1188,7 @@ func (p *parser) parseStepExecRun(entries []workflowMappingEntry) *ExecRun {
 				"env",
 				"continue-on-error",
 				"timeout-minutes",
+				"background",
 				"run",
 				"shell",
 				"working-directory",
@@ -1195,6 +1197,84 @@ func (p *parser) parseStepExecRun(entries []workflowMappingEntry) *ExecRun {
 	}
 
 	// Note: `ret.Run` is never `nil` because `parseStep` checks `run` key in advance
+	return ret
+}
+
+// https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#jobsjob_idstepswait
+func (p *parser) parseStepExecWait(entries []workflowMappingEntry) *ExecWait {
+	ret := &ExecWait{}
+
+	for _, e := range entries {
+		switch e.id {
+		case "wait":
+			ret.Wait = p.parseStringOrStringSequence("wait", e.val, false, false)
+			ret.Pos = e.key.Pos
+		case "wait-all":
+			// "wait-all:" takes no argument though GitHub also accepts a boolean value
+			if e.val.Tag != "!!null" && e.val.Tag != "!!bool" {
+				p.errorf(e.val, "\"wait-all\" takes no argument but %s node with %q tag was found", nodeKindName(e.val.Kind), e.val.Tag)
+			}
+			ret.WaitAll = true
+			ret.Pos = e.key.Pos
+		case "id", "name", "continue-on-error":
+			// do nothing
+		default:
+			p.unexpectedKey(e.key, "step to wait for background steps", []string{
+				"id",
+				"name",
+				"continue-on-error",
+				"wait",
+				"wait-all",
+			})
+		}
+	}
+
+	return ret
+}
+
+// https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#jobsjob_idstepscancel
+func (p *parser) parseStepExecCancel(entries []workflowMappingEntry) *ExecCancel {
+	ret := &ExecCancel{}
+
+	for _, e := range entries {
+		switch e.id {
+		case "cancel":
+			ret.Cancel = p.parseString(e.val, false)
+		case "id", "name", "continue-on-error":
+			// do nothing
+		default:
+			p.unexpectedKey(e.key, "step to cancel background step", []string{
+				"id",
+				"name",
+				"continue-on-error",
+				"cancel",
+			})
+		}
+	}
+
+	return ret
+}
+
+// https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#jobsjob_idstepsparallel
+func (p *parser) parseStepExecParallel(entries []workflowMappingEntry) *ExecParallel {
+	ret := &ExecParallel{}
+
+	for _, e := range entries {
+		switch e.id {
+		case "parallel":
+			ret.Pos = e.key.Pos
+			if !p.checkSequence("parallel", e.val, false) {
+				continue
+			}
+			ret.Steps = make([]*Step, 0, len(e.val.Content))
+			for _, c := range e.val.Content {
+				ret.Steps = append(ret.Steps, p.parseStep(c))
+			}
+		default:
+			p.unexpectedKey(e.key, "step to run steps in parallel", []string{"parallel"})
+		}
+	}
+
 	return ret
 }
 
@@ -1207,6 +1287,9 @@ func (p *parser) parseStep(n *yaml.Node) *Step {
 		isAction
 		isDocker
 		isRun
+		isWait
+		isCancel
+		isParallel
 	)
 
 	kind := isUnknown
@@ -1225,6 +1308,11 @@ func (p *parser) parseStep(n *yaml.Node) *Step {
 			ret.ContinueOnError = p.parseBool(e.val)
 		case "timeout-minutes":
 			ret.TimeoutMinutes = p.parseTimeoutMinutes(e.val)
+		case "background":
+			ret.Background = p.parseBool(e.val)
+			if ret.Background != nil && ret.Background.Expression != nil {
+				p.error(e.val, "expression is not available at \"background\". only boolean literal \"true\" or \"false\" is allowed")
+			}
 		case "uses":
 			if strings.HasPrefix(e.val.Value, "docker://") {
 				kind = isDocker
@@ -1233,7 +1321,13 @@ func (p *parser) parseStep(n *yaml.Node) *Step {
 			}
 		case "run":
 			kind = isRun
-			// Note: Unexpected keys are checked in parseStepExecAction or parseStepExecRun later
+		case "wait", "wait-all":
+			kind = isWait
+		case "cancel":
+			kind = isCancel
+		case "parallel":
+			kind = isParallel
+			// Note: Unexpected keys are checked in parseStepExec* methods later
 		}
 	}
 
@@ -1242,6 +1336,12 @@ func (p *parser) parseStep(n *yaml.Node) *Step {
 		ret.Exec = p.parseStepExecAction(entries, kind == isDocker)
 	case isRun:
 		ret.Exec = p.parseStepExecRun(entries)
+	case isWait:
+		ret.Exec = p.parseStepExecWait(entries)
+	case isCancel:
+		ret.Exec = p.parseStepExecCancel(entries)
+	case isParallel:
+		ret.Exec = p.parseStepExecParallel(entries)
 	default:
 		p.error(n, "step must run script with \"run\" section or run action with \"uses\" section")
 	}

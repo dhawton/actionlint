@@ -141,6 +141,14 @@ func (v *Visitor) visitStep(n *Step) error {
 		}
 	}
 
+	if e, ok := n.Exec.(*ExecParallel); ok {
+		for _, s := range e.Steps {
+			if err := v.visitStep(s); err != nil {
+				return err
+			}
+		}
+	}
+
 	if v.dbg != nil {
 		v.reportElapsedTime(fmt.Sprintf("VisitStep at %s", n.Pos), t)
 	}

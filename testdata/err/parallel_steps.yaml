@@ -1,0 +1,35 @@
+on: push
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - id: server
+        run: npm start
+        # ERROR: Expression is not allowed
+        background: ${{ github.event_name == 'push' }}
+      - id: monitor
+        run: ./monitor.sh
+        # ERROR: Not a boolean
+        background: [true]
+      # ERROR: "if" is not available for wait step
+      - wait: server
+        if: always()
+      # ERROR: "wait-all" takes no argument
+      - wait-all: server
+      # ERROR: "cancel" takes a single step ID
+      - cancel: [server, monitor]
+      # ERROR: "timeout-minutes" is not available for cancel step
+      - cancel: monitor
+        timeout-minutes: 1
+      # ERROR: "name" is not available for parallel step
+      - name: Build
+        parallel:
+          - run: echo hello
+          # ERROR: Steps in parallel are checked
+          - uses: actions/checkout@v5
+            shell: bash
+          # ERROR: Step ID is duplicated
+          - id: server
+            run: echo '${{ steps.undefined.outputs.foo }}'
+      # ERROR: "parallel" must be a sequence
+      - parallel: echo hello

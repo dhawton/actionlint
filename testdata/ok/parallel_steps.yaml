@@ -1,0 +1,34 @@
+on: push
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Start server
+        id: server
+        run: npm start
+        background: true
+      - id: build
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+        background: true
+      - run: npm test
+      - name: Wait for server
+        wait: server
+      - wait: [server, build]
+        continue-on-error: true
+      - id: waiter
+        wait-all:
+      - wait-all: true
+      - name: Stop server
+        id: stop
+        cancel: server
+        continue-on-error: true
+      - parallel:
+          - name: Build frontend
+            id: frontend
+            run: npm run build:frontend
+          - uses: actions/checkout@v5
+          - parallel:
+              - run: echo nested
+      - run: echo '${{ steps.frontend.outputs.foo }} ${{ steps.stop.outcome }}'
