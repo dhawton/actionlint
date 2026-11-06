@@ -1,0 +1,30 @@
+on: push
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - id: server
+        run: npm start
+        background: true
+      - id: db
+        uses: ./.github/actions/db
+        background: true
+      - wait: server
+      - wait: [Server, db]
+      - wait-all:
+      - cancel: db
+      - cancel: ${{ github.run_id }}
+      - parallel:
+          - id: lint
+            run: npm run lint
+          - uses: actions/checkout@v5
+      - run: echo '${{ steps.lint.outcome }}'
+  other:
+    runs-on: ubuntu-latest
+    steps:
+      # IDs are scoped to a job
+      - id: server
+        run: npm start
+        background: true
+      - cancel: server

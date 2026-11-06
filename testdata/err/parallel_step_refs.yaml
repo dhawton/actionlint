@@ -1,0 +1,35 @@
+on: push
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - id: regular
+        run: echo regular
+      # ERROR: Unknown step ID
+      - cancel: typo
+      # ERROR: Not a background step
+      - wait: regular
+      # ERROR: Background step defined after this step
+      - wait: [later]
+      - id: later
+        run: echo later
+        background: true
+      # ERROR: Cannot refer to itself
+      - id: self
+        cancel: self
+      # OK: Step IDs are case insensitive
+      - cancel: LATER
+      - parallel:
+          - id: grouped
+            run: echo grouped
+            # ERROR: Steps in parallel group already run in the background
+            background: true
+          # ERROR: Only run and uses steps are allowed in parallel group
+          - wait: nope
+          - wait-all:
+          - cancel: nope
+          - parallel:
+              - run: echo nested
+      # ERROR: Steps in parallel group cannot be referenced
+      - wait: grouped

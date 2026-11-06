@@ -29,6 +29,4 @@ jobs:
             id: frontend
             run: npm run build:frontend
           - uses: actions/checkout@v5
-          - parallel:
-              - run: echo nested
       - run: echo '${{ steps.frontend.outputs.foo }} ${{ steps.stop.outcome }}'

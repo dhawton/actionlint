@@ -175,6 +175,21 @@
               "helpUri": "https://github.com/rhysd/actionlint/blob/main/docs/checks.md"
             },
             {
+              "id": "parallel-steps",
+              "name": "ParallelSteps",
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "properties": {
+                "description": "Checks step IDs referenced by \"wait\" and \"cancel\", and steps not allowed in \"parallel\" groups",
+                "queryURI": "https://github.com/rhysd/actionlint/blob/main/docs/checks.md"
+              },
+              "fullDescription": {
+                "text": "Checks step IDs referenced by \"wait\" and \"cancel\", and steps not allowed in \"parallel\" groups"
+              },
+              "helpUri": "https://github.com/rhysd/actionlint/blob/main/docs/checks.md"
+            },
+            {
               "id": "permissions",
               "name": "Permissions",
               "defaultConfiguration": {

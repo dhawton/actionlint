@@ -3,6 +3,7 @@ test.yaml:13:21: expected bool value but found sequence node with "!!seq" tag [s
 test.yaml:16:9: unexpected key "if" for step to wait for background steps. expected one of "continue-on-error", "id", "name", "wait", "wait-all" [syntax-check]
 test.yaml:18:19: "wait-all" takes no argument but scalar node with "!!str" tag was found [syntax-check]
 test.yaml:20:17: expected scalar node for string value but found sequence node with "!!seq" tag [syntax-check]
+test.yaml:22:17: step "monitor" at "cancel" is not a background step. "cancel" must refer to a step with "background: true" [parallel-steps]
 test.yaml:23:9: unexpected key "timeout-minutes" for step to cancel background step. expected one of "cancel", "continue-on-error", "id", "name" [syntax-check]
 test.yaml:25:9: expected "parallel" key for step to run steps in parallel but got "name" [syntax-check]
 test.yaml:30:13: unexpected key "shell" for step to execute action. expected one of "background", "continue-on-error", "env", "id", "if", "name", "timeout-minutes", "uses", "with" [syntax-check]
