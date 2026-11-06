@@ -1,7 +1,9 @@
 package actionlint
 
 import (
+	"errors"
 	"fmt"
+	"math/big"
 	"strconv"
 	"strings"
 )
@@ -139,15 +141,23 @@ func (p *ExprParser) parseNestedExpr() ExprNode {
 
 func (p *ExprParser) parseInt() ExprNode {
 	t := p.peek()
-	i, err := strconv.ParseInt(t.Value, 0, 32)
-	if err != nil {
-		p.errorf("parsing invalid integer literal %q: %s", t.Value, err)
-		return nil
+	i, err := strconv.ParseInt(t.Value, 0, 64)
+	if err == nil && int64(int(i)) == i {
+		p.next() // eat int
+		return &IntNode{int(i), t}
 	}
 
-	p.next() // eat int
+	// Numbers are float64 at runtime, so an integer too large for int is still a valid literal.
+	if err == nil || errors.Is(err, strconv.ErrRange) {
+		if f, _, ferr := big.ParseFloat(t.Value, 0, 53, big.ToNearestEven); ferr == nil {
+			v, _ := f.Float64()
+			p.next() // eat int
+			return &FloatNode{v, t}
+		}
+	}
 
-	return &IntNode{int(i), t}
+	p.errorf("parsing invalid integer literal %q: %s", t.Value, err)
+	return nil
 }
 
 func (p *ExprParser) parseFloat() ExprNode {
