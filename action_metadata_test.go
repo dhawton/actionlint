@@ -285,6 +285,57 @@ func TestLocalActionsIgnoreRemoteActions(t *testing.T) {
 	}
 }
 
+func TestLocalActionsSelfRepositorySpec(t *testing.T) {
+	proj := &Project{filepath.Join("testdata", "action_metadata"), nil}
+	c := NewLocalActionsCache(proj, nil)
+
+	want := testGetWantedActionMetadata()
+	have, cached, err := c.FindMetadata("$/action-yml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	testDiffActionMetadata(t, want, have)
+	testCheckCachedFlag(t, false, cached)
+
+	// "./" and "$/" refer to the same action so they share the cache entry
+	have2, cached, err := c.FindMetadata("./action-yml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if have != have2 {
+		t.Fatal("metadata for \"$/action-yml\" and \"./action-yml\" should be the same object")
+	}
+	testCheckCachedFlag(t, true, cached)
+}
+
+func TestLocalUsesSpec(t *testing.T) {
+	tests := []struct {
+		in   string
+		want string
+		ok   bool
+	}{
+		{"./action", "./action", true},
+		{"$/action", "./action", true},
+		{"$/path/to/workflow.yml", "./path/to/workflow.yml", true},
+		{"$/", "./", true},
+		{"./", "./", true},
+		{"$action", "", false},
+		{"$", "", false},
+		{"../action", "", false},
+		{"owner/repo@v1", "", false},
+		{"docker://alpine", "", false},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.in, func(t *testing.T) {
+			have, ok := localUsesSpec(tc.in)
+			if ok != tc.ok || have != tc.want {
+				t.Fatalf("wanted (%q, %v) but got (%q, %v)", tc.want, tc.ok, have, ok)
+			}
+		})
+	}
+}
+
 func TestLocalActionsLogCacheHit(t *testing.T) {
 	dbg := &bytes.Buffer{}
 	testdir := filepath.Join("testdata", "action_metadata")

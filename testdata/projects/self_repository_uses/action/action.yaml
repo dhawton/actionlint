@@ -1,0 +1,12 @@
+name: 'Self repository action'
+description: 'Action referenced with $/'
+inputs:
+  greeting:
+    description: 'Greeting'
+    required: true
+outputs:
+  message:
+    description: 'Message'
+runs:
+  using: 'node24'
+  main: 'index.js'

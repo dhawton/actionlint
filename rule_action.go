@@ -328,7 +328,12 @@ func (rule *RuleAction) VisitStep(n *Step) error {
 
 	spec := e.Uses.Value
 
-	if strings.HasPrefix(spec, "./") {
+	if strings.HasPrefix(spec, "$/") && strings.ContainsRune(spec, '@') {
+		rule.Errorf(e.Uses.Pos, "self repository action %q must not include \"@{ref}\". \"$/\" always refers to the commit of the running workflow", spec)
+		return nil
+	}
+
+	if _, ok := localUsesSpec(spec); ok {
 		// Relative to repository root
 		rule.checkLocalAction(spec, e)
 		return nil
