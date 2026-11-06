@@ -55,7 +55,6 @@ sed_ "s/entry: ghcr\\.io\\/dhawton\\/actionlint:.*/entry: ghcr.io\\/dhawton\\/ac
 echo "Updating $usage_doc"
 sed_ "\
     s/    rev: v[0-9]+\.[0-9]+\.[0-9]+/    rev: v${version}/; \
-    s/ actionlint@[0-9]+\.[0-9]+\.[0-9]+/ actionlint@${version}/g; \
     s/\`actionlint:[0-9]+\.[0-9]+\.[0-9]+\`/\`actionlint:${version}\`/g; \
     " "$usage_doc"
 
@@ -70,3 +69,5 @@ done
 echo "Done. Open a PR with these changes. After it merges, tag the merge commit and push the tag:"
 echo "  git tag ${tag} <merge commit> && git push origin ${tag}"
 echo "Release job: ${job_url}"
+
+touch .bumptimestamp

@@ -150,22 +150,11 @@ make fuzz FUZZ_FUNC=FuzzParse
 
 When releasing v1.2.3 as example:
 
-1. Ensure all changes were already pushed to remote by checking `git push origin master` outputs `Everything up-to-date`
-2. Run `bash ./scripts/bump-version.bash 1.2.3`
-3. Wait until [the CI release job](.github/workflows/release.yaml) completes successfully:
-   - GoReleaser builds release binaries and make pre-release at GitHub and updates [Homebrew formula](./HomebrewFormula/actionlint.rb)
-   - The CI job also updates version string in `./scripts/download-actionlint.bash`
-4. Open the pre-release at [release page](https://github.com/rhysd/actionlint/releases) with browser
-5. Write up release notes, uncheck pre-release checkbox and publish the new release
-6. Run `make CHANGELOG.md` to update [CHANGELOG.md](./CHANGELOG.md) and make a commit for the change. This step requires
-   [changelog-from-release](https://github.com/rhysd/changelog-from-release).
-7. Run `git pull` to merge upstream changes to local `main` branch and run `git push origin main`
-8. Update the playground by `./playground/deploy.bash` if it is not updated yet for the release
-
-> [!NOTE]
-> If you see workflow failure at releasing a new winget package, check the [fork repository](https://github.com/rhysd/winget-pkgs)
-> is up-to-date. If it is outdated, click 'Sync fork' button to update it to the latest. And re-run the failed job
-> again.
+1. On a branch off `main`, run `bash ./scripts/bump-version.bash 1.2.3` and open a PR with the changes
+2. After the PR merges, tag the merge commit and push the tag: `git tag v1.2.3 <merge commit> && git push origin v1.2.3`
+3. Wait until [the CI release job](.github/workflows/release.yaml) completes. GoReleaser publishes the release with binaries,
+   and the Docker image is pushed to `ghcr.io/dhawton/actionlint`
+4. Write up release notes on the [release page](https://github.com/dhawton/actionlint/releases)
 
 ## How to generate the manual
 
