@@ -1,0 +1,18 @@
+on: push
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      # actionlint-ignore: shellcheck
+      - run: |
+          echo hello
+          echo $FOO
+      - run: echo $FOO # actionlint-ignore: shellcheck
+      # ERROR: Not ignored
+      - run: |
+          echo hello
+          echo $FOO
+      # ERROR: Not ignored
+      # actionlint-ignore: expression
+      - run: echo $FOO
