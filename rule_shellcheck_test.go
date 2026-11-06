@@ -158,7 +158,7 @@ func TestRuleShellcheckDetectShell(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.what, func(t *testing.T) {
-			r := newRuleShellcheck(&externalCommand{})
+			r := newRuleShellcheck(&externalCommand{}, "")
 
 			w := &Workflow{}
 			if tc.workflow != "" {

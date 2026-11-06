@@ -961,6 +961,8 @@ On GitHub Actions:
     SHELLCHECK_OPTS: --exclude=SC2129
 ```
 
+`.shellcheckrc` files are ignored by default. To use one, pass it with [`-shellcheck-rcfile`](usage.md) option.
+
 <a id="check-pyflakes-integ"></a>
 ## [pyflakes][] integration for `run:`
 
