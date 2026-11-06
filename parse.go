@@ -820,12 +820,20 @@ func (p *parser) parseConcurrency(pos *Pos, n *yaml.Node) *Concurrency {
 			ret.Group = p.parseString(e.val, false)
 		case "cancel-in-progress":
 			ret.CancelInProgress = p.parseBool(e.val)
+		case "queue":
+			ret.Queue = p.parseString(e.val, false)
+			if v := ret.Queue.Value; !ret.Queue.ContainsExpression() && v != "" && v != "single" && v != "max" {
+				p.errorf(e.val, "invalid value %q for \"queue\" in \"concurrency\" section. it must be one of \"single\" or \"max\"", v)
+			}
 		default:
-			p.unexpectedKey(e.key, "concurrency", []string{"group", "cancel-in-progress"})
+			p.unexpectedKey(e.key, "concurrency", []string{"group", "cancel-in-progress", "queue"})
 		}
 	}
 	if ret.Group == nil {
 		p.errorAt(pos, "group name is missing in \"concurrency\" section")
+	}
+	if q, c := ret.Queue, ret.CancelInProgress; q != nil && q.Value == "max" && c != nil && c.Expression == nil && c.Value {
+		p.errorAt(q.Pos, "\"queue: max\" cannot be combined with \"cancel-in-progress: true\" in \"concurrency\" section")
 	}
 	return ret
 }
