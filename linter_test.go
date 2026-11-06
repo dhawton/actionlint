@@ -544,6 +544,59 @@ func TestLinterPathsNotFound(t *testing.T) {
 	}
 }
 
+func TestLinterShellcheckRcfile(t *testing.T) {
+	shellcheck, err := execabs.LookPath("shellcheck")
+	if err != nil {
+		t.Skip("shellcheck is not found")
+	}
+	if out, _ := execabs.Command(shellcheck, "--help").CombinedOutput(); !bytes.Contains(out, []byte("--rcfile")) {
+		t.Skip("shellcheck does not support --rcfile")
+	}
+
+	rc := filepath.Join(t.TempDir(), ".shellcheckrc")
+	if err := os.WriteFile(rc, []byte("disable=SC2006\n"), 0o644); err != nil {
+		panic(err)
+	}
+
+	in := []byte(`on: push
+jobs:
+  job:
+    runs-on: ubuntu-latest
+    steps:
+      - run: x=` + "`date`" + `; echo "$x"
+`)
+
+	for _, tc := range []struct {
+		rcfile string
+		want   int
+	}{
+		{"", 1},
+		{rc, 0},
+	} {
+		l, err := NewLinter(io.Discard, &LinterOptions{Shellcheck: shellcheck, ShellcheckRcfile: tc.rcfile})
+		if err != nil {
+			t.Fatal(err)
+		}
+		errs, err := l.LintStdin(bytes.NewReader(in))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(errs) != tc.want {
+			t.Errorf("wanted %d errors with rcfile %q but got %v", tc.want, tc.rcfile, errs)
+		}
+	}
+}
+
+func TestLinterShellcheckRcfileNotFound(t *testing.T) {
+	_, err := NewLinter(io.Discard, &LinterOptions{ShellcheckRcfile: filepath.Join("testdata", "this-file-doesnt-exist")})
+	if err == nil {
+		t.Fatal("error did not occur")
+	}
+	if !strings.Contains(err.Error(), "could not read shellcheck rc file") {
+		t.Fatal("unexpected error:", err)
+	}
+}
+
 type customRuleForTest struct {
 	RuleBase
 	count int

@@ -67,6 +67,9 @@ type LinterOptions struct {
 	// "shellcheck" or file path like "/path/to/shellcheck", "path/to/shellcheck". When this value
 	// is empty, shellcheck won't run to check scripts in workflow file.
 	Shellcheck string
+	// ShellcheckRcfile is a file path to a shellcheckrc file passed to shellcheck. When this value is
+	// empty, shellcheck runs without reading any rc file.
+	ShellcheckRcfile string
 	// Pyflakes is executable for running pyflakes external command. It can be command name like "pyflakes"
 	// or file path like "/path/to/pyflakes", "path/to/pyflakes". When this value is empty, pyflakes
 	// won't run to check scripts in workflow file.
@@ -102,6 +105,7 @@ type Linter struct {
 	logLevel       LogLevel
 	oneline        bool
 	shellcheck     string
+	scRcfile       string
 	pyflakes       string
 	ignorePats     IgnorePatterns
 	stdin          string
@@ -149,6 +153,12 @@ func NewLinter(out io.Writer, opts *LinterOptions) (*Linter, error) {
 		cfg = c
 	}
 
+	if opts.ShellcheckRcfile != "" {
+		if _, err := os.Stat(opts.ShellcheckRcfile); err != nil {
+			return nil, fmt.Errorf("could not read shellcheck rc file: %w", err)
+		}
+	}
+
 	ignore := make([]*regexp.Regexp, 0, len(opts.IgnorePatterns))
 	for _, s := range opts.IgnorePatterns {
 		r, err := regexp.Compile(s)
@@ -186,6 +196,7 @@ func NewLinter(out io.Writer, opts *LinterOptions) (*Linter, error) {
 		level,
 		opts.Oneline,
 		opts.Shellcheck,
+		opts.ShellcheckRcfile,
 		opts.Pyflakes,
 		ignore,
 		stdin,
@@ -572,7 +583,7 @@ func (l *Linter) check(
 			NewRuleIfCond(),
 		}
 		if l.shellcheck != "" {
-			r, err := NewRuleShellcheck(l.shellcheck, proc)
+			r, err := NewRuleShellcheck(l.shellcheck, l.scRcfile, proc)
 			if err == nil {
 				rules = append(rules, r)
 			} else {

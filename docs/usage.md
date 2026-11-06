@@ -42,6 +42,13 @@ processes.
 actionlint -shellcheck= -pyflakes=
 ```
 
+actionlint runs shellcheck with `--norc` by default, so `.shellcheckrc` files are not read. `-shellcheck-rcfile` passes an
+explicit rc file to shellcheck instead. shellcheck 0.10.0 or later is needed for this option.
+
+```sh
+actionlint -shellcheck-rcfile .shellcheckrc
+```
+
 <a id="format"></a>
 ### Format error messages
 
