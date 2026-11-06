@@ -1,0 +1,4 @@
+test.yaml:3:13: invalid value "read-write" for "cache-mode". it must be one of "read", "write", "write-only", or "none" [syntax-check]
+test.yaml:8:17: invalid value "READ" for "cache-mode". it must be one of "read", "write", "write-only", or "none" [syntax-check]
+test.yaml:15:7: expected scalar node for string value but found mapping node with "!!map" tag [syntax-check]
+test.yaml:21:17: invalid value "off" for "cache-mode". it must be one of "read", "write", "write-only", or "none" [syntax-check]

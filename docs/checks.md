@@ -70,7 +70,7 @@ jobs:
 Output:
 
 ```
-test.yaml:6:5: unexpected key "default" for "job" section. expected one of "concurrency", "container", "continue-on-error", "defaults", "env", "environment", "if", "name", "needs", "outputs", "permissions", "runs-on", "secrets", "services", "snapshot", "steps", "strategy", "timeout-minutes", "uses", "with" [syntax-check]
+test.yaml:6:5: unexpected key "default" for "job" section. expected one of "cache-mode", "concurrency", "container", "continue-on-error", "defaults", "env", "environment", "if", "name", "needs", "outputs", "permissions", "runs-on", "secrets", "services", "snapshot", "steps", "strategy", "timeout-minutes", "uses", "with" [syntax-check]
   |
 6 |     default:
   |     ^~~~~~~~
@@ -2267,7 +2267,7 @@ jobs:
 Output:
 
 ```
-test.yaml:6:5: when a reusable workflow is called with "uses", "runs-on" is not available. only following keys are allowed: "name", "uses", "with", "secrets", "needs", "if", and "permissions" in job "job1" [syntax-check]
+test.yaml:6:5: when a reusable workflow is called with "uses", "runs-on" is not available. only following keys are allowed: "name", "uses", "with", "secrets", "needs", "if", "permissions", and "cache-mode" in job "job1" [syntax-check]
   |
 6 |     runs-on: ubuntu-latest
   |     ^~~~~~~~

@@ -1404,6 +1404,20 @@ func (p *parser) parseRunsOn(n *yaml.Node) *Runner {
 	return r
 }
 
+// https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#cache-mode
+func (p *parser) parseCacheMode(n *yaml.Node) *String {
+	s := p.parseString(n, false)
+	if s.Value == "" || s.ContainsExpression() {
+		return s
+	}
+	switch s.Value {
+	case "read", "write", "write-only", "none":
+	default:
+		p.errorf(n, "invalid value %q for \"cache-mode\". it must be one of \"read\", \"write\", \"write-only\", or \"none\"", s.Value)
+	}
+	return s
+}
+
 func (p *parser) parseSnapshot(pos *Pos, n *yaml.Node) *Snapshot {
 	switch n.Kind {
 	case yaml.ScalarNode:
@@ -1536,6 +1550,8 @@ func (p *parser) parseJob(id *String, n *yaml.Node) *Job {
 			callOnlyKey = k
 		case "snapshot":
 			ret.Snapshot = p.parseSnapshot(k.Pos, v)
+		case "cache-mode":
+			ret.CacheMode = p.parseCacheMode(v)
 		default:
 			p.unexpectedKey(e.key, "job", []string{
 				"name",
@@ -1558,6 +1574,7 @@ func (p *parser) parseJob(id *String, n *yaml.Node) *Job {
 				"with",
 				"secrets",
 				"snapshot",
+				"cache-mode",
 			})
 		}
 	}
@@ -1566,7 +1583,7 @@ func (p *parser) parseJob(id *String, n *yaml.Node) *Job {
 		if stepsOnlyKey != nil {
 			p.errorfAt(
 				stepsOnlyKey.Pos,
-				"when a reusable workflow is called with \"uses\", %q is not available. only following keys are allowed: \"name\", \"uses\", \"with\", \"secrets\", \"needs\", \"if\", and \"permissions\" in job %q",
+				"when a reusable workflow is called with \"uses\", %q is not available. only following keys are allowed: \"name\", \"uses\", \"with\", \"secrets\", \"needs\", \"if\", \"permissions\", and \"cache-mode\" in job %q",
 				stepsOnlyKey.Value,
 				id.Value,
 			)
@@ -1640,6 +1657,8 @@ func (p *parser) parse(n *yaml.Node) *Workflow {
 			w.Jobs = p.parseJobs(v)
 		case "run-name":
 			w.RunName = p.parseString(v, false)
+		case "cache-mode":
+			w.CacheMode = p.parseCacheMode(v)
 		default:
 			p.unexpectedKey(k, "workflow", []string{
 				"name",
@@ -1649,6 +1668,7 @@ func (p *parser) parse(n *yaml.Node) *Workflow {
 				"env",
 				"defaults",
 				"concurrency",
+				"cache-mode",
 				"jobs",
 			})
 		}

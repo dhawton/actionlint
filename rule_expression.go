@@ -173,6 +173,7 @@ func (rule *RuleExpression) VisitWorkflowPre(n *Workflow) error {
 
 	rule.checkDefaults(n.Defaults, "")
 	rule.checkConcurrency(n.Concurrency, "concurrency")
+	rule.checkString(n.CacheMode, "")
 
 	rule.workflow = n
 	return nil
@@ -228,6 +229,7 @@ func (rule *RuleExpression) VisitJobPre(n *Job) error {
 	}
 
 	rule.checkConcurrency(n.Concurrency, "jobs.<job_id>.concurrency")
+	rule.checkString(n.CacheMode, "")
 
 	rule.checkEnv(n.Env, "jobs.<job_id>.env")
 

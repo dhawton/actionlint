@@ -998,6 +998,9 @@ type Job struct {
 	// Snapshot is a custom image snapshot.
 	// https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#jobsjob_idsnapshot
 	Snapshot *Snapshot
+	// CacheMode is the level of cache access for the job.
+	// https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#jobsjob_idcache-mode
+	CacheMode *String
 	// Pos is a position in source.
 	Pos *Pos
 }
@@ -1024,6 +1027,9 @@ type Workflow struct {
 	// Concurrency is concurrency configuration of entire workflow. Each jobs also can their own
 	// concurrency configurations.
 	Concurrency *Concurrency
+	// CacheMode is the level of cache access for all jobs in the workflow.
+	// https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#cache-mode
+	CacheMode *String
 	// Jobs is mappings from job ID to the job object. Keys are in lower case since they are case-insensitive.
 	Jobs map[string]*Job
 }
