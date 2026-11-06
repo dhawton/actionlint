@@ -1,9 +1,5 @@
 name: Download script
 on:
-  push:
-    paths:
-      - scripts/download-actionlint.bash
-      - scripts/test-download-actionlint.bash
   pull_request:
     paths:
       - scripts/download-actionlint.bash
