@@ -160,6 +160,9 @@ type ReusableWorkflowMetadata struct {
 	Inputs  ReusableWorkflowMetadataInputs  `yaml:"inputs"`
 	Outputs ReusableWorkflowMetadataOutputs `yaml:"outputs"`
 	Secrets ReusableWorkflowMetadataSecrets `yaml:"secrets"`
+	// JobPermissions maps job IDs to their effective permissions (scope to "read" or "write"). Jobs
+	// whose permissions are not declared or unknown are omitted.
+	JobPermissions map[string]map[string]string `yaml:"-"`
 }
 
 // LocalReusableWorkflowCache is a cache for local reusable workflow metadata files. It avoids find/read/parse
@@ -266,6 +269,10 @@ func (c *LocalReusableWorkflowCache) convWorkflowPathToSpec(p string) (string, b
 // to workflow call spec, (3) some cache for the workflow is already existing.
 // This method is thread safe.
 func (c *LocalReusableWorkflowCache) WriteWorkflowCallEvent(wpath string, event *WorkflowCallEvent) {
+	c.writeWorkflowCallEvent(wpath, event, nil)
+}
+
+func (c *LocalReusableWorkflowCache) writeWorkflowCallEvent(wpath string, event *WorkflowCallEvent, w *Workflow) {
 	// Convert workflow path to workflow call spec
 	spec, ok := c.convWorkflowPathToSpec(wpath)
 	if !ok {
@@ -317,6 +324,22 @@ func (c *LocalReusableWorkflowCache) WriteWorkflowCallEvent(wpath string, event 
 		}
 	}
 
+	if w != nil {
+		wp := permissionsFromAST(w.Permissions)
+		for _, j := range w.Jobs {
+			p := wp
+			if j.Permissions != nil {
+				p = permissionsFromAST(j.Permissions)
+			}
+			if p != nil && j.ID != nil {
+				if m.JobPermissions == nil {
+					m.JobPermissions = map[string]map[string]string{}
+				}
+				m.JobPermissions[j.ID.Value] = p
+			}
+		}
+	}
+
 	c.mu.Lock()
 	c.cache[spec] = m
 	c.mu.Unlock()
@@ -326,7 +349,9 @@ func (c *LocalReusableWorkflowCache) WriteWorkflowCallEvent(wpath string, event 
 
 func parseReusableWorkflowMetadata(src []byte) (*ReusableWorkflowMetadata, error) {
 	type workflow struct {
-		On yaml.Node `yaml:"on"`
+		On          yaml.Node `yaml:"on"`
+		Permissions yaml.Node `yaml:"permissions"`
+		Jobs        yaml.Node `yaml:"jobs"`
 	}
 
 	var w workflow
@@ -334,7 +359,32 @@ func parseReusableWorkflowMetadata(src []byte) (*ReusableWorkflowMetadata, error
 		return nil, err // Unreachable
 	}
 
-	n := &w.On
+	m, err := parseWorkflowCallMetadata(&w.On)
+	if err != nil {
+		return nil, err
+	}
+
+	wp := permissionsFromYAML(&w.Permissions)
+	for i := 0; i+1 < len(w.Jobs.Content); i += 2 {
+		p := wp
+		j := w.Jobs.Content[i+1]
+		for k := 0; k+1 < len(j.Content); k += 2 {
+			if j.Content[k].Value == "permissions" {
+				p = permissionsFromYAML(j.Content[k+1])
+			}
+		}
+		if p != nil {
+			if m.JobPermissions == nil {
+				m.JobPermissions = map[string]map[string]string{}
+			}
+			m.JobPermissions[w.Jobs.Content[i].Value] = p
+		}
+	}
+
+	return m, nil
+}
+
+func parseWorkflowCallMetadata(n *yaml.Node) (*ReusableWorkflowMetadata, error) {
 	if n.Line == 0 && n.Column == 0 {
 		return nil, fmt.Errorf("\"on:\" is not found")
 	}

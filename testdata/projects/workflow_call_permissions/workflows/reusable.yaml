@@ -1,0 +1,28 @@
+on: workflow_call
+
+permissions:
+  contents: read
+
+jobs:
+  inherit:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo
+  pr:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      issues: none
+    steps:
+      - run: echo
+  nothing:
+    runs-on: ubuntu-latest
+    permissions: {}
+    steps:
+      - run: echo
+  oidc:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+    steps:
+      - run: echo

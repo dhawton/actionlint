@@ -2,6 +2,8 @@ package actionlint
 
 import (
 	"fmt"
+	"maps"
+	"slices"
 	"strings"
 )
 
@@ -11,6 +13,7 @@ type RuleWorkflowCall struct {
 	workflowCallEventPos *Pos
 	workflowPath         string
 	cache                *LocalReusableWorkflowCache
+	workflowPermissions  *Permissions
 }
 
 // NewRuleWorkflowCall creates a new RuleWorkflowCall instance. 'workflowPath' is a file path to
@@ -29,12 +32,13 @@ func NewRuleWorkflowCall(workflowPath string, cache *LocalReusableWorkflowCache)
 
 // VisitWorkflowPre is callback when visiting Workflow node before visiting its children.
 func (rule *RuleWorkflowCall) VisitWorkflowPre(n *Workflow) error {
+	rule.workflowPermissions = n.Permissions
 	for _, e := range n.On {
 		if e, ok := e.(*WorkflowCallEvent); ok {
 			rule.workflowCallEventPos = e.Pos
 			// Register this reusable workflow in cache so that it does not need to parse this workflow
 			// file again when this workflow is called by other workflows.
-			rule.cache.WriteWorkflowCallEvent(rule.workflowPath, e)
+			rule.cache.writeWorkflowCallEvent(rule.workflowPath, e, n)
 			break
 		}
 	}
@@ -53,7 +57,7 @@ func (rule *RuleWorkflowCall) VisitJobPre(n *Job) error {
 	}
 
 	if isWorkflowCallUsesLocalFormat(u.Value) {
-		rule.checkWorkflowCallUsesLocal(n.WorkflowCall)
+		rule.checkWorkflowCallUsesLocal(n)
 		return nil
 	}
 
@@ -76,7 +80,8 @@ func (rule *RuleWorkflowCall) VisitJobPre(n *Job) error {
 	return nil
 }
 
-func (rule *RuleWorkflowCall) checkWorkflowCallUsesLocal(call *WorkflowCall) {
+func (rule *RuleWorkflowCall) checkWorkflowCallUsesLocal(job *Job) {
+	call := job.WorkflowCall
 	u := call.Uses
 	m, err := rule.cache.FindMetadata(u.Value)
 	if err != nil {
@@ -138,6 +143,28 @@ func (rule *RuleWorkflowCall) checkWorkflowCallUsesLocal(call *WorkflowCall) {
 					}
 				}
 				rule.Errorf(s.Name.Pos, "secret %q is not defined in %q reusable workflow. %s", s.Name.Value, u.Value, note)
+			}
+		}
+	}
+
+	// Validate permissions. When the caller declares no permissions, the default permissions are
+	// configured in repository settings so they are unknown.
+	p := job.Permissions
+	if p == nil {
+		p = rule.workflowPermissions
+	}
+	if granted := permissionsFromAST(p); granted != nil {
+		for _, id := range slices.Sorted(maps.Keys(m.JobPermissions)) {
+			req := m.JobPermissions[id]
+			missing := []string{}
+			for s, v := range req {
+				if g := granted[s]; g != v && g != "write" {
+					missing = append(missing, s+": "+v)
+				}
+			}
+			if len(missing) > 0 {
+				slices.Sort(missing)
+				rule.Errorf(u.Pos, "job %q in %q reusable workflow requests permissions which are not granted by the calling job: %s", id, u.Value, strings.Join(missing, ", "))
 			}
 		}
 	}
