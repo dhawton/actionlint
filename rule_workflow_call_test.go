@@ -388,3 +388,57 @@ func TestRuleWorkflowCallCheckReusableWorkflowCall(t *testing.T) {
 		})
 	}
 }
+
+func TestRuleWorkflowCallRequireCommitHash(t *testing.T) {
+	sha := "8e5e7e5ab8b370d6c329ec480221332ada57f0ab"
+	tests := []struct {
+		what string
+		uses string
+		err  bool
+	}{
+		{"full sha", "owner/repo/.github/workflows/x.yml@" + sha, false},
+		{"short sha", "owner/repo/.github/workflows/x.yml@8e5e7e5", true},
+		{"upper case sha", "owner/repo/.github/workflows/x.yml@" + strings.ToUpper(sha), true},
+		{"tag", "owner/repo/.github/workflows/x.yml@v1", true},
+		{"branch", "owner/repo/.github/workflows/x.yml@main", true},
+		{"branch with slash", "owner/repo/.github/workflows/x.yml@release/v1", true},
+		{"local", "./.github/workflows/x.yml", false},
+		{"self repository", "$/.github/workflows/x.yml", false},
+		{"expression", "owner/repo/.github/workflows/x.yml@${{ env.REF }}", false},
+	}
+
+	for _, tc := range tests {
+		for _, enabled := range []bool{true, false} {
+			name := tc.what
+			if !enabled {
+				name += " disabled"
+			}
+			t.Run(name, func(t *testing.T) {
+				c := NewLocalReusableWorkflowCache(nil, "", nil)
+				r := NewRuleWorkflowCall("", c)
+				r.SetConfig(&Config{RequireCommitHash: enabled})
+				j := &Job{
+					WorkflowCall: &WorkflowCall{
+						Uses: &String{Value: tc.uses, Pos: &Pos{}},
+					},
+				}
+				if err := r.VisitJobPre(j); err != nil {
+					t.Fatal(err)
+				}
+				var errs []*Error
+				for _, e := range r.Errs() {
+					if strings.Contains(e.Message, "full length commit SHA") {
+						errs = append(errs, e)
+					}
+				}
+				want := tc.err && enabled
+				if want && len(errs) != 1 {
+					t.Fatalf("wanted one error but got %v", errs)
+				}
+				if !want && len(errs) > 0 {
+					t.Fatalf("wanted no error but got %v", errs)
+				}
+			})
+		}
+	}
+}

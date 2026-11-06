@@ -42,6 +42,9 @@ paths:
     ignore:
       # Ignore errors from the old runner check. This may be useful for (outdated) self-hosted runner environment.
       - 'the runner of ".+" action is too old to run on GitHub Actions'
+
+# Require remote actions and reusable workflows to be pinned to a full length commit SHA.
+require-commit-hash: true
 ```
 
 - `self-hosted-runner`: Configuration for your self-hosted runner environment.
@@ -57,6 +60,10 @@ paths:
     - `ignore`: The configuration to ignore (filter) the errors by the error messages. This is an array of regular
       expressions. When one of the patterns matches the error message, the error will be ignored. It's similar to the
       `-ignore` command line option.
+- `require-commit-hash`: When `true`, actionlint reports remote actions (`owner/repo@ref`) and remote reusable workflows
+  (`owner/repo/path/to/workflow.yml@ref`) at `uses:` whose ref is not a full length (40 characters) commit SHA. Tags,
+  branches, and short SHAs are reported. Local (`./`) and self repository (`$/`) references and `docker://` images are not
+  checked. The default value is `false`.
 
 ## Generate the initial configuration
 
