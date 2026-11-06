@@ -1070,6 +1070,10 @@ func (rule *RuleExpression) checkRawYAMLString(y *RawYAMLString) ExprType {
 		return ts[0].ty
 	}
 
+	if y.str {
+		return StringType{}
+	}
+
 	s := strings.TrimSpace(y.Value)
 	// Note that keywords are case sensitive. TRUE, FALSE, NULL are invalid named value.
 	if s == "true" || s == "false" {

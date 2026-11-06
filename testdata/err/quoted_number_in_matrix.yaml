@@ -1,0 +1,14 @@
+on: push
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        quoted: ["3.10"]
+        unquoted: [3.10]
+    runs-on: ubuntu-latest
+    steps:
+      # ERROR: quoted value is a string
+      - run: echo "${{ matrix.quoted.foo }}"
+      # ERROR: unquoted value is still a number
+      - run: echo "${{ matrix.unquoted.foo }}"

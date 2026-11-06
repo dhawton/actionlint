@@ -661,6 +661,8 @@ type RawYAMLString struct {
 	// Value is string representation of the scalar node.
 	Value string
 	pos   *Pos
+	// str is true when the scalar is tagged !!str (e.g. quoted), so "3.10" is a string, not a number.
+	str bool
 }
 
 // Kind returns kind of raw YAML value.
