@@ -1,0 +1,20 @@
+on:
+  workflow_call:
+    outputs:
+      build_result:
+        value: ${{ jobs.build.result }}
+      build_artifact:
+        value: ${{ jobs.build.outputs.artifact }}
+      call_result:
+        value: ${{ jobs.call.result }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      artifact: ${{ steps.build.outputs.artifact }}
+    steps:
+      - id: build
+        run: echo 'artifact=foo.zip' >> "$GITHUB_OUTPUT"
+  call:
+    uses: octo-org/example-repo/.github/workflows/called-workflow.yml@v1
