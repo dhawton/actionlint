@@ -1,14 +1,10 @@
 name: Problem Matchers
 on:
-  push:
+  pull_request:
     paths:
       - 'scripts/generate-actionlint-matcher/*.js'
       - 'testdata/examples/*.out'
       - 'testdata/err/*.out'
-    branches:
-      - main
-    tags-ignore:
-      - '*'
   workflow_dispatch:
 
 jobs:
