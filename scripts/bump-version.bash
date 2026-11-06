@@ -45,7 +45,7 @@ function sed_() {
 pre_commit_hook='./.pre-commit-hooks.yaml'
 usage_doc='./docs/usage.md'
 tag="v${version}"
-job_url='https://github.com/rhysd/actionlint/actions/workflows/release.yaml'
+job_url='https://github.com/dhawton/actionlint/actions/workflows/release.yaml'
 playground_html='./playground/index.html'
 readme_doc='./README.md'
 man_ronn='./man/actionlint.1.ronn'
@@ -54,7 +54,7 @@ echo "Bumping up version to ${version} (tag: ${tag})"
 
 # Update container image tag in pre-commit hook (See #116 for more details)
 echo "Updating $pre_commit_hook"
-sed_ "s/entry: docker\\.io\\/rhysd\\/actionlint:.*/entry: docker.io\\/rhysd\\/actionlint:${version}/" "$pre_commit_hook"
+sed_ "s/entry: ghcr\\.io\\/dhawton\\/actionlint:.*/entry: ghcr.io\\/dhawton\\/actionlint:${version}/" "$pre_commit_hook"
 
 echo "Updating $usage_doc"
 sed_ "\
