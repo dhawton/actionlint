@@ -7,6 +7,9 @@ permissions:
   models: write
   pages: READ
   CHECKS: none
+  code-quality: execute
+  copilot-requests: read
+  vulnerability-alerts: write
 
 jobs:
   test_job:
@@ -18,5 +21,8 @@ jobs:
       models: write
       pages: READ
       CHECKS: none
+      code-quality: execute
+      copilot-requests: read
+      vulnerability-alerts: write
     steps:
       - run: echo hello

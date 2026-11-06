@@ -23,6 +23,14 @@ func TestRuleRunnerLabelCheckLabels(t *testing.T) {
 			labels: []string{"windows-latest"},
 		},
 		{
+			what:   "simple GH-hosted Windows 11 VS 2026 arm64 runner label",
+			labels: []string{"windows-11-vs2026-arm"},
+		},
+		{
+			what:   "self-hosted Windows with windows-11-vs2026-arm",
+			labels: []string{"self-hosted", "windows", "windows-11-vs2026-arm"},
+		},
+		{
 			what:   "simple GH-hosted macOS runner label",
 			labels: []string{"macos-14"},
 		},
@@ -158,6 +166,18 @@ func TestRuleRunnerLabelCheckLabels(t *testing.T) {
 			labels: []string{"${{matrix.os}}"},
 		},
 		{
+			what:   "xcode-27",
+			labels: []string{"xcode-27"},
+		},
+		{
+			what:   "xcode-27-xlarge",
+			labels: []string{"xcode-27-xlarge"},
+		},
+		{
+			what:   "self-hosted macOS with xcode-27",
+			labels: []string{"self-hosted", "macos", "xcode-27"},
+		},
+		{
 			what:   "ubuntu-26.04",
 			labels: []string{"ubuntu-26.04"},
 		},
@@ -282,9 +302,24 @@ func TestRuleRunnerLabelCheckLabels(t *testing.T) {
 			errs:   []string{`label "windows-11-arm" conflicts with label "windows-2025"`},
 		},
 		{
+			what:   "Windows 11 arm64 image labels conflict",
+			labels: []string{"windows-11-arm", "windows-11-vs2026-arm"},
+			errs:   []string{`label "windows-11-vs2026-arm" conflicts with label "windows-11-arm"`},
+		},
+		{
 			what:   "macOS XL and normal labels conflict",
 			labels: []string{"macos-26-xlarge", "macos-26"},
 			errs:   []string{`label "macos-26" conflicts with label "macos-26-xlarge"`},
+		},
+		{
+			what:   "Xcode 27 XL and normal labels conflict",
+			labels: []string{"xcode-27-xlarge", "xcode-27"},
+			errs:   []string{`label "xcode-27" conflicts with label "xcode-27-xlarge"`},
+		},
+		{
+			what:   "Xcode 27 and macOS 26 labels conflict",
+			labels: []string{"xcode-27", "macos-26"},
+			errs:   []string{`label "macos-26" conflicts with label "xcode-27"`},
 		},
 		{
 			what:   "larger runner labels conflict",

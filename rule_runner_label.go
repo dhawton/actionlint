@@ -23,10 +23,13 @@ const (
 	compatMacOS260Intel
 	compatMacOS260L
 	compatMacOS260XL
+	compatXcode27
+	compatXcode27XL
 	compatWindows2022
 	compatWindows2025
 	compatWindows2025VS2026
 	compatWindows11Arm
+	compatWindows11VS2026Arm
 )
 
 // https://docs.github.com/en/actions/using-github-hosted-runners/about-github-hosted-runners
@@ -37,6 +40,7 @@ var allGitHubHostedRunnerLabels = []string{
 	"windows-2025-vs2026",
 	"windows-2022",
 	"windows-11-arm",
+	"windows-11-vs2026-arm",
 	"ubuntu-slim",
 	"ubuntu-latest",
 	"ubuntu-latest-4-cores",
@@ -51,6 +55,8 @@ var allGitHubHostedRunnerLabels = []string{
 	"macos-latest",
 	"macos-latest-xlarge",
 	"macos-latest-large",
+	"xcode-27-xlarge",
+	"xcode-27",
 	"macos-26-intel",
 	"macos-26-xlarge",
 	"macos-26-large",
@@ -94,6 +100,8 @@ var defaultRunnerOSCompats = map[string]runnerOSCompat{
 	"macos-latest-xlarge":    compatMacOS150XL,
 	"macos-latest-large":     compatMacOS150L,
 	"macos-latest":           compatMacOS150,
+	"xcode-27-xlarge":        compatXcode27XL,
+	"xcode-27":               compatXcode27,
 	"macos-26-intel":         compatMacOS260Intel,
 	"macos-26-xlarge":        compatMacOS260XL,
 	"macos-26-large":         compatMacOS260L,
@@ -111,9 +119,10 @@ var defaultRunnerOSCompats = map[string]runnerOSCompat{
 	"windows-2025-vs2026":    compatWindows2025VS2026,
 	"windows-2022":           compatWindows2022,
 	"windows-11-arm":         compatWindows11Arm,
+	"windows-11-vs2026-arm":  compatWindows11VS2026Arm,
 	"linux":                  compatUbuntu2604 | compatUbuntu2404 | compatUbuntu2204, // Note: "linux" does not always indicate Ubuntu. It might be Fedora or Arch or ...
-	"macos":                  compatMacOS260 | compatMacOS260Intel | compatMacOS260L | compatMacOS260XL | compatMacOS150 | compatMacOS150Intel | compatMacOS150L | compatMacOS150XL | compatMacOS140 | compatMacOS140L | compatMacOS140XL,
-	"windows":                compatWindows2025VS2026 | compatWindows2025 | compatWindows2022 | compatWindows11Arm,
+	"macos":                  compatXcode27 | compatXcode27XL | compatMacOS260 | compatMacOS260Intel | compatMacOS260L | compatMacOS260XL | compatMacOS150 | compatMacOS150Intel | compatMacOS150L | compatMacOS150XL | compatMacOS140 | compatMacOS140L | compatMacOS140XL,
+	"windows":                compatWindows2025VS2026 | compatWindows2025 | compatWindows2022 | compatWindows11Arm | compatWindows11VS2026Arm,
 }
 
 // RuleRunnerLabel is a rule to check runner label like "ubuntu-latest". There are two types of
