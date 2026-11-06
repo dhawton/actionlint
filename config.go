@@ -67,6 +67,9 @@ type Config struct {
 	// Paths is a "paths" mapping in the configuration file. The keys are glob patterns to match file paths.
 	// And the values are corresponding configurations applied to the file paths.
 	Paths map[string]PathConfig `yaml:"paths"`
+	// RequireCommitHash requires remote actions and reusable workflows at "uses:" to be pinned to a full
+	// length commit SHA.
+	RequireCommitHash bool `yaml:"require-commit-hash"`
 }
 
 // PathConfigs returns a list of all PathConfig values matching to the given file path. The path must
@@ -153,6 +156,10 @@ config-variables: null
 paths:
 #  .github/workflows/**/*.yml:
 #    ignore: []
+
+# Require remote actions and reusable workflows at "uses:" to be pinned to a
+# full length commit SHA.
+require-commit-hash: false
 `)
 	if err := os.WriteFile(path, b, 0644); err != nil {
 		return fmt.Errorf("could not write default configuration file at %q: %w", path, err)

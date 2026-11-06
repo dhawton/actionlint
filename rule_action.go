@@ -375,6 +375,8 @@ func (rule *RuleAction) checkRepoAction(spec string, exec *ExecAction) {
 
 	if owner == "" || repo == "" || ref == "" {
 		rule.invalidActionFormat(exec.Uses.Pos, spec, "owner and repo and ref should not be empty")
+	} else if rule.config != nil && rule.config.RequireCommitHash && !isFullCommitSHA(ref) {
+		rule.Errorf(exec.Uses.Pos, "action %q must be pinned to a full length commit SHA because \"require-commit-hash\" is enabled in the config", spec)
 	}
 
 	meta, ok := PopularActions[spec]
@@ -394,6 +396,18 @@ func (rule *RuleAction) checkRepoAction(spec string, exec *ExecAction) {
 	rule.checkAction(meta, exec, func(m *ActionMetadata) string {
 		return strconv.Quote(spec)
 	})
+}
+
+func isFullCommitSHA(ref string) bool {
+	if len(ref) != 40 {
+		return false
+	}
+	for _, r := range ref {
+		if (r < '0' || '9' < r) && (r < 'a' || 'f' < r) {
+			return false
+		}
+	}
+	return true
 }
 
 func (rule *RuleAction) invalidActionFormat(pos *Pos, spec string, why string) {

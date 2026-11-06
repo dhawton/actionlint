@@ -66,6 +66,10 @@ func TestConfigParseError(t *testing.T) {
 			want: `cannot construct`,
 		},
 		{
+			in:   `require-commit-hash: [true]`,
+			want: `!!seq into bool`,
+		},
+		{
 			in: `
 paths:
   foo:
@@ -274,6 +278,31 @@ func TestConfigGenerateDefaultConfigFileOK(t *testing.T) {
 	}
 	if len(c.Paths) != 0 {
 		t.Fatal(c.Paths)
+	}
+	if c.RequireCommitHash {
+		t.Fatal("require-commit-hash should be disabled by default")
+	}
+}
+
+func TestConfigParseRequireCommitHash(t *testing.T) {
+	tests := []struct {
+		input string
+		want  bool
+	}{
+		{"", false},
+		{"require-commit-hash: false", false},
+		{"require-commit-hash: true", true},
+	}
+	for _, tc := range tests {
+		t.Run(tc.input, func(t *testing.T) {
+			c, err := ParseConfig([]byte(tc.input))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if c.RequireCommitHash != tc.want {
+				t.Fatalf("wanted %v but got %v", tc.want, c.RequireCommitHash)
+			}
+		})
 	}
 }
 

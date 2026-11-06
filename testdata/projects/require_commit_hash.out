@@ -1,0 +1,4 @@
+workflows/test.yaml:10:15: action "actions/checkout@8e5e7e5" must be pinned to a full length commit SHA because "require-commit-hash" is enabled in the config [action]
+workflows/test.yaml:12:15: action "actions/setup-go@v5" must be pinned to a full length commit SHA because "require-commit-hash" is enabled in the config [action]
+workflows/test.yaml:14:15: action "github/codeql-action/init@main" must be pinned to a full length commit SHA because "require-commit-hash" is enabled in the config [action]
+workflows/test.yaml:19:11: reusable workflow "owner/repo/.github/workflows/reusable.yaml@v1" must be pinned to a full length commit SHA because "require-commit-hash" is enabled in the config [workflow-call]

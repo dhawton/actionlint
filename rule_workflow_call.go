@@ -58,6 +58,11 @@ func (rule *RuleWorkflowCall) VisitJobPre(n *Job) error {
 	}
 
 	if isWorkflowCallUsesRepoFormat(u.Value) {
+		if rule.config != nil && rule.config.RequireCommitHash {
+			if _, ref, _ := strings.Cut(u.Value, "@"); !isFullCommitSHA(ref) {
+				rule.Errorf(u.Pos, "reusable workflow %q must be pinned to a full length commit SHA because \"require-commit-hash\" is enabled in the config", u.Value)
+			}
+		}
 		return nil
 	}
 

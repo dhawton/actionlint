@@ -1,0 +1,22 @@
+on: push
+
+jobs:
+  steps:
+    runs-on: ubuntu-latest
+    steps:
+      # OK: pinned to full length commit SHA
+      - uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab
+      # ERROR: short SHA
+      - uses: actions/checkout@8e5e7e5
+      # ERROR: tag
+      - uses: actions/setup-go@v5
+      # ERROR: branch
+      - uses: github/codeql-action/init@main
+      # OK: docker:// is not checked
+      - uses: docker://alpine:3.20
+  # ERROR: tag
+  remote-tag:
+    uses: owner/repo/.github/workflows/reusable.yaml@v1
+  # OK: pinned to full length commit SHA
+  remote-sha:
+    uses: owner/repo/.github/workflows/reusable.yaml@8e5e7e5ab8b370d6c329ec480221332ada57f0ab
