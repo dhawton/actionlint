@@ -1,0 +1,31 @@
+on: push
+concurrency:
+  group: production-deploy
+  # ERROR: Invalid value
+  queue: all
+jobs:
+  conflict:
+    runs-on: ubuntu-latest
+    concurrency:
+      group: conflict
+      # ERROR: queue: max with cancel-in-progress: true
+      queue: max
+      cancel-in-progress: true
+    steps:
+      - run: echo hello
+  not-string:
+    runs-on: ubuntu-latest
+    concurrency:
+      group: not-string
+      # ERROR: Not a string
+      queue: [max]
+    steps:
+      - run: echo hello
+  bad-context:
+    runs-on: ubuntu-latest
+    concurrency:
+      group: bad-context
+      # ERROR: secrets context is not available
+      queue: ${{ secrets.QUEUE }}
+    steps:
+      - run: echo hello

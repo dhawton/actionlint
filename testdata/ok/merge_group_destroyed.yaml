@@ -1,0 +1,9 @@
+on:
+  merge_group:
+    types: [checks_requested, destroyed]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    if: github.event.action != 'destroyed'
+    steps:
+      - run: echo hello

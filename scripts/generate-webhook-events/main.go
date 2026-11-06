@@ -16,6 +16,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"slices"
 	"sort"
 	"strings"
 
@@ -25,6 +26,13 @@ import (
 const theURL = "https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows"
 
 var dbg = log.New(io.Discard, "", log.LstdFlags)
+
+// Activity types which trigger workflows but are not listed in the page. They are listed in the
+// webhook payload document.
+// https://docs.github.com/en/webhooks/webhook-events-and-payloads
+var extraActivityTypes = map[string][]string{
+	"merge_group": {"destroyed"},
+}
 
 // Parse the activity types of each webhook event. The keys of the map are names of the webhook events
 // like "pull_request", and the values are arrays of names of their activity types.
@@ -107,6 +115,20 @@ func parse(src []byte) (map[string][]string, error) {
 		return nil, errors.New("no webhook table was found in given HTML source")
 	}
 	dbg.Printf("Parsed %d webhook tables\n", len(parsed))
+
+	for hook, extra := range extraActivityTypes {
+		types, ok := parsed[hook]
+		if !ok || types == nil {
+			continue
+		}
+		for _, t := range extra {
+			if !slices.Contains(types, t) {
+				types = append(types, t)
+				dbg.Printf("Added extra activity type %q to hook %q\n", t, hook)
+			}
+		}
+		parsed[hook] = types
+	}
 
 	return parsed, nil
 }

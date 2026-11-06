@@ -173,6 +173,7 @@ func (rule *RuleExpression) VisitWorkflowPre(n *Workflow) error {
 
 	rule.checkDefaults(n.Defaults, "")
 	rule.checkConcurrency(n.Concurrency, "concurrency")
+	rule.checkString(n.CacheMode, "")
 
 	rule.workflow = n
 	return nil
@@ -228,6 +229,7 @@ func (rule *RuleExpression) VisitJobPre(n *Job) error {
 	}
 
 	rule.checkConcurrency(n.Concurrency, "jobs.<job_id>.concurrency")
+	rule.checkString(n.CacheMode, "")
 
 	rule.checkEnv(n.Env, "jobs.<job_id>.env")
 
@@ -330,7 +332,7 @@ func (rule *RuleExpression) getActionOutputsType(spec *String) *ObjectType {
 		return NewMapObjectType(StringType{})
 	}
 
-	if strings.HasPrefix(spec.Value, "./") {
+	if _, ok := localUsesSpec(spec.Value); ok {
 		meta, _, err := rule.localActions.FindMetadata(spec.Value)
 		if err != nil {
 			rule.Error(spec.Pos, err.Error())
@@ -511,6 +513,7 @@ func (rule *RuleExpression) checkConcurrency(c *Concurrency, workflowKey string)
 	}
 	rule.checkString(c.Group, workflowKey)
 	rule.checkBool(c.CancelInProgress, workflowKey)
+	rule.checkString(c.Queue, workflowKey)
 }
 
 func (rule *RuleExpression) checkDefaults(d *Defaults, workflowKey string) {

@@ -1,0 +1,6 @@
+workflows/test.yaml:13:15: missing input "greeting" which is required by action "Self repository action" defined at "$/action". all required inputs are "greeting" [action]
+workflows/test.yaml:15:11: input "greting" is not defined in action "Self repository action" defined at "$/action". available inputs are "greeting" [action]
+workflows/test.yaml:17:24: property "msg" is not defined in object type {message: string} [expression]
+workflows/test.yaml:19:15: self repository action "$/action@v1" must not include "@{ref}". "$/" always refers to the commit of the running workflow [action]
+workflows/test.yaml:26:11: input "name" is required by "$/workflows/reusable.yaml" reusable workflow [workflow-call]
+workflows/test.yaml:33:24: property "foo" is not defined in object type {result: string} [expression]

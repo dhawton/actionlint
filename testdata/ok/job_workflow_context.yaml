@@ -1,0 +1,11 @@
+on: push
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "$REF $SHA $REPO $FILE"
+        env:
+          REF: ${{ job.workflow_ref }}
+          SHA: ${{ job.workflow_sha }}
+          REPO: ${{ job.workflow_repository }}
+          FILE: ${{ job.workflow_file_path }}

@@ -1,0 +1,33 @@
+on: push
+
+jobs:
+  steps:
+    runs-on: ubuntu-latest
+    steps:
+      - id: ok
+        uses: $/action
+        with:
+          greeting: hello
+      - run: echo '${{ steps.ok.outputs.message }}'
+      # ERROR: Missing required input and undefined input
+      - uses: $/action
+        with:
+          greting: hello
+      # ERROR: Undefined output
+      - run: echo '${{ steps.ok.outputs.msg }}'
+      # ERROR: "$/" must not have a ref
+      - uses: $/action@v1
+  call:
+    uses: $/workflows/reusable.yaml
+    with:
+      name: foo
+  call-error:
+    # ERROR: Missing required input
+    uses: $/workflows/reusable.yaml
+  downstream:
+    needs: [call]
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo '${{ needs.call.outputs.result }}'
+      # ERROR: Undefined output
+      - run: echo '${{ needs.call.outputs.foo }}'

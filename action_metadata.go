@@ -234,14 +234,31 @@ func (c *LocalActionsCache) writeCache(key string, val *ActionMetadata) {
 	c.mu.Unlock()
 }
 
+// localUsesSpec returns the "./{path}" form of a local "uses:" value. Both the workspace-relative
+// "./{path}" form and the self-repository "$/{path}" form are local. The second return value is
+// false when the value is not local.
+func localUsesSpec(spec string) (string, bool) {
+	if strings.HasPrefix(spec, "./") {
+		return spec, true
+	}
+	if p, ok := strings.CutPrefix(spec, "$/"); ok {
+		return "./" + p, true
+	}
+	return "", false
+}
+
 // FindMetadata finds metadata for given spec. The spec should indicate for local action hence it
-// should start with "./". The first return value can be nil even if error did not occur.
+// should start with "./" or "$/". The first return value can be nil even if error did not occur.
 // LocalActionCache caches that the action was not found. At first search, it returns an error that
 // the action was not found. But at the second search, it does not return an error even if the result
 // is nil. This behavior prevents repeating to report the same error from multiple places.
 // Calling this method is thread-safe.
 func (c *LocalActionsCache) FindMetadata(spec string) (*ActionMetadata, bool, error) {
-	if c.proj == nil || !strings.HasPrefix(spec, "./") {
+	if c.proj == nil {
+		return nil, false, nil
+	}
+	spec, ok := localUsesSpec(spec)
+	if !ok {
 		return nil, false, nil
 	}
 

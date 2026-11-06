@@ -1,0 +1,17 @@
+on:
+  workflow_call:
+    inputs:
+      name:
+        type: string
+        required: true
+    outputs:
+      result:
+        value: ${{ jobs.test.outputs.result }}
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    outputs:
+      result: ok
+    steps:
+      - run: echo hello

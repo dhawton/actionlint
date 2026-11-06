@@ -376,6 +376,27 @@ func TestReusableWorkflowCacheFindMetadataOK(t *testing.T) {
 	}
 }
 
+func TestReusableWorkflowCacheFindMetadataSelfRepositorySpec(t *testing.T) {
+	proj := &Project{filepath.Join("testdata", "reusable_workflow_metadata"), nil}
+	c := NewLocalReusableWorkflowCache(proj, "", nil)
+
+	m, err := c.FindMetadata("$/ok.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if diff := cmp.Diff(m, testReusableWorkflowWantedMetadata); diff != "" {
+		t.Fatal(diff)
+	}
+
+	m2, err := c.FindMetadata("./ok.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if m != m2 {
+		t.Error("\"$/ok.yaml\" and \"./ok.yaml\" should share the cached metadata")
+	}
+}
+
 func TestReusableWorkflowCacheFindMetadataError(t *testing.T) {
 	tests := []struct {
 		what string

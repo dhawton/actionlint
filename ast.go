@@ -400,6 +400,9 @@ type Concurrency struct {
 	Group *String
 	// CancelInProgress is a flag that shows if canceling this workflow cancels other jobs in progress.
 	CancelInProgress *Bool
+	// Queue is how pending jobs or workflow runs are queued. "single" (default) or "max".
+	// https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/control-workflow-concurrency
+	Queue *String
 	// Pos is a position in source.
 	Pos *Pos
 }
@@ -425,6 +428,12 @@ const (
 	ExecKindAction ExecKind = iota
 	// ExecKindRun is kind for step to run shell script
 	ExecKindRun
+	// ExecKindWait is kind for step to wait for background steps with 'wait' or 'wait-all'
+	ExecKindWait
+	// ExecKindCancel is kind for step to cancel a background step with 'cancel'
+	ExecKindCancel
+	// ExecKindParallel is kind for step to run a group of steps in parallel with 'parallel'
+	ExecKindParallel
 )
 
 // Exec is an interface how the step is executed. Step in workflow runs either an action or a script
@@ -478,6 +487,49 @@ type ExecAction struct {
 // Kind returns kind of the step execution.
 func (e *ExecAction) Kind() ExecKind {
 	return ExecKindAction
+}
+
+// ExecWait is configuration of a step which waits for background steps with 'wait' or 'wait-all'.
+// https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#jobsjob_idstepswait
+// https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#jobsjob_idstepswait-all
+type ExecWait struct {
+	// Wait is a list of step IDs at 'wait' section. This is nil when 'wait-all' is used.
+	Wait []*String
+	// WaitAll is true when 'wait-all' is used.
+	WaitAll bool
+	// Pos is a position of 'wait' or 'wait-all' key.
+	Pos *Pos
+}
+
+// Kind returns kind of the step execution.
+func (e *ExecWait) Kind() ExecKind {
+	return ExecKindWait
+}
+
+// ExecCancel is configuration of a step which cancels a background step with 'cancel'.
+// https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#jobsjob_idstepscancel
+type ExecCancel struct {
+	// Cancel is an ID of the background step to cancel.
+	Cancel *String
+}
+
+// Kind returns kind of the step execution.
+func (e *ExecCancel) Kind() ExecKind {
+	return ExecKindCancel
+}
+
+// ExecParallel is configuration of a step which runs a group of steps in parallel with 'parallel'.
+// https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#jobsjob_idstepsparallel
+type ExecParallel struct {
+	// Steps is a list of steps to run in parallel.
+	Steps []*Step
+	// Pos is a position of 'parallel' key.
+	Pos *Pos
+}
+
+// Kind returns kind of the step execution.
+func (e *ExecParallel) Kind() ExecKind {
+	return ExecKindParallel
 }
 
 // RawYAMLValueKind is kind of raw YAML values
@@ -752,6 +804,9 @@ type Step struct {
 	ContinueOnError *Bool
 	// https://docs.github.com/en/actions/learn-github-actions/workflow-syntax-for-github-actions#jobsjob_idstepstimeout-minutes
 	TimeoutMinutes *Float
+	// Background is 'background' section. When it is true, the step runs asynchronously.
+	// https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#jobsjob_idstepsbackground
+	Background *Bool
 	// Pos is a position in source.
 	Pos *Pos
 }
@@ -943,6 +998,9 @@ type Job struct {
 	// Snapshot is a custom image snapshot.
 	// https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#jobsjob_idsnapshot
 	Snapshot *Snapshot
+	// CacheMode is the level of cache access for the job.
+	// https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#jobsjob_idcache-mode
+	CacheMode *String
 	// Pos is a position in source.
 	Pos *Pos
 }
@@ -969,6 +1027,9 @@ type Workflow struct {
 	// Concurrency is concurrency configuration of entire workflow. Each jobs also can their own
 	// concurrency configurations.
 	Concurrency *Concurrency
+	// CacheMode is the level of cache access for all jobs in the workflow.
+	// https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#cache-mode
+	CacheMode *String
 	// Jobs is mappings from job ID to the job object. Keys are in lower case since they are case-insensitive.
 	Jobs map[string]*Job
 }

@@ -1,0 +1,21 @@
+on: push
+# ERROR: Invalid value
+cache-mode: read-write
+jobs:
+  upper:
+    runs-on: ubuntu-latest
+    # ERROR: Values are case-sensitive
+    cache-mode: READ
+    steps:
+      - run: echo hello
+  mapping:
+    runs-on: ubuntu-latest
+    # ERROR: Not a string
+    cache-mode:
+      mode: write
+    steps:
+      - run: echo hello
+  call:
+    uses: owner/repo/.github/workflows/reusable.yaml@main
+    # ERROR: Invalid value at reusable workflow call
+    cache-mode: off
