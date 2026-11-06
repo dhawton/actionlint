@@ -5,12 +5,25 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 )
+
+var rePlaygroundLink = regexp.MustCompile(`\[Playground\]\(https://rhysd\.github\.io/actionlint/#[^)]*\)`)
+
+// decodePlaygroundLinks swaps each playground link for the text it encodes, since zlib output differs between Go versions.
+func decodePlaygroundLinks(b []byte) []byte {
+	return rePlaygroundLink.ReplaceAllFunc(b, func(m []byte) []byte {
+		if src, ok := decodePlaygroundLink(string(m)); ok {
+			return append([]byte("[Playground]("), append(src, ')')...)
+		}
+		return m
+	})
+}
 
 // Do not mess up the test output. Temporarily commenting out this function may be helpful when debugging some test cases.
 func init() {
@@ -57,7 +70,7 @@ func TestMainGenerateOK(t *testing.T) {
 
 	want := must(os.ReadFile(filepath.FromSlash("testdata/ok/minimal.out")))
 	have := must(os.ReadFile(path))
-	if diff := cmp.Diff(want, have); diff != "" {
+	if diff := cmp.Diff(decodePlaygroundLinks(want), decodePlaygroundLinks(have)); diff != "" {
 		t.Fatal(diff)
 	}
 }
@@ -140,7 +153,7 @@ func TestUpdateOK(t *testing.T) {
 				t.Fatal(err)
 			}
 			want := must(os.ReadFile(out))
-			if diff := cmp.Diff(want, have); diff != "" {
+			if diff := cmp.Diff(decodePlaygroundLinks(want), decodePlaygroundLinks(have)); diff != "" {
 				t.Fatal(diff)
 			}
 		})
