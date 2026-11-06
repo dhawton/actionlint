@@ -2658,6 +2658,75 @@ as `{version: string}`. In the downstream job, actionlint can report an error at
 
 Note that this check only works with local reusable workflow (starting with `./` or `$/`).
 
+### Check permissions of workflow call
+
+Example reusable workflow:
+
+```yaml
+# .github/workflows/reusable.yaml
+on: workflow_call
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - run: make
+  comment:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+      - run: ./comment.sh
+```
+
+Example input:
+
+```yaml
+on: pull_request
+
+jobs:
+  # OK. Default permissions are configured in repository settings
+  default:
+    uses: ./.github/workflows/reusable.yaml
+  # ERROR: `comment` job requires `pull-requests: write`
+  read-only:
+    uses: ./.github/workflows/reusable.yaml
+    permissions:
+      contents: read
+      pull-requests: read
+  # OK. `write` implies `read`
+  enough:
+    uses: ./.github/workflows/reusable.yaml
+    permissions:
+      contents: write
+      pull-requests: write
+```
+
+Output:
+<!-- Skip update output -->
+
+```
+test.yaml:9:11: job "comment" in "./.github/workflows/reusable.yaml" reusable workflow requests permissions which are not granted by the calling job: pull-requests: write [workflow-call]
+  |
+9 |     uses: ./.github/workflows/reusable.yaml
+  |           ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
+
+<!-- Skip playground link -->
+
+A job in a reusable workflow cannot have more permissions than the calling job grants. GitHub fails such a workflow run with
+`startup_failure`. actionlint compares the permissions of each job in the reusable workflow with the permissions of the calling
+job and reports the missing ones. The permissions of a job in the reusable workflow are its `permissions:` or the workflow-level
+`permissions:` when the job doesn't have it.
+
+When the calling job and its workflow have no `permissions:`, the default permissions are configured in the repository settings.
+actionlint skips the check in this case since it cannot know them.
+
+Note that this check only works with local reusable workflow (starting with `./` or `$/`).
+
 <a id="id-naming-convention"></a>
 ## ID naming convention
 

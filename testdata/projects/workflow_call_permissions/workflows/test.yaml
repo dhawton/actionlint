@@ -1,0 +1,35 @@
+on: push
+
+jobs:
+  # OK: default permissions are unknown
+  default:
+    uses: ./workflows/reusable.yaml
+  # OK
+  write-all:
+    uses: ./workflows/reusable.yaml
+    permissions: write-all
+  # ERROR: pr, oidc
+  read-all:
+    uses: ./workflows/reusable.yaml
+    permissions: read-all
+  # OK: write implies read
+  enough:
+    uses: ./workflows/reusable.yaml
+    permissions:
+      contents: write
+      pull-requests: write
+      id-token: write
+  # ERROR: inherit, pr, oidc
+  not-enough:
+    uses: ./workflows/reusable.yaml
+    permissions:
+      pull-requests: read
+  # OK
+  read-all-callee:
+    uses: ./workflows/read_all.yaml
+    permissions: read-all
+  # ERROR
+  read-all-callee-error:
+    uses: ./workflows/read_all.yaml
+    permissions:
+      contents: write

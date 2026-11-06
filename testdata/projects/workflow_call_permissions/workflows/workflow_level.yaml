@@ -1,0 +1,17 @@
+on: push
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  # ERROR: oidc
+  workflow-level:
+    uses: ./workflows/reusable.yaml
+  # OK: job-level permissions take precedence
+  job-level:
+    uses: ./workflows/reusable.yaml
+    permissions:
+      contents: read
+      pull-requests: write
+      id-token: write

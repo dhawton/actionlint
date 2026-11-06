@@ -1,6 +1,11 @@
 package actionlint
 
-import "slices"
+import (
+	"slices"
+	"strings"
+
+	"go.yaml.in/yaml/v4"
+)
 
 var allPermissionScopes = map[string][]string{
 	"actions":              {"read", "write", "none"},
@@ -83,4 +88,66 @@ func (rule *RulePermissions) checkPermissions(p *Permissions) {
 			rule.Errorf(p.Value.Pos, "%q is invalid as permission of scope %q. available values are %s", p.Value.Value, n, quotes(s))
 		}
 	}
+}
+
+// effectivePermissions converts a permissions configuration into a map from scope to "read" or
+// "write". 'scopes' is nil for "read-all" or "write-all". It returns nil when the configuration is
+// unknown.
+func effectivePermissions(all string, scopes map[string]string) map[string]string {
+	ret := map[string]string{}
+	if scopes == nil {
+		var lv string
+		switch all {
+		case "read-all":
+			lv = "read"
+		case "write-all":
+			lv = "write"
+		default:
+			return nil
+		}
+		for s, allowed := range allPermissionScopes {
+			if slices.Contains(allowed, lv) {
+				ret[s] = lv
+			} else if slices.Contains(allowed, "read") {
+				ret[s] = "read"
+			}
+		}
+		return ret
+	}
+	for s, v := range scopes {
+		if v != "none" && slices.Contains(allPermissionScopes[s], v) {
+			ret[s] = v
+		}
+	}
+	return ret
+}
+
+func permissionsFromAST(p *Permissions) map[string]string {
+	if p == nil {
+		return nil
+	}
+	if p.All != nil {
+		return effectivePermissions(p.All.Value, nil)
+	}
+	scopes := make(map[string]string, len(p.Scopes))
+	for n, s := range p.Scopes {
+		if s.Value != nil {
+			scopes[strings.ToLower(n)] = s.Value.Value
+		}
+	}
+	return effectivePermissions("", scopes)
+}
+
+func permissionsFromYAML(n *yaml.Node) map[string]string {
+	switch n.Kind {
+	case yaml.ScalarNode:
+		return effectivePermissions(n.Value, nil)
+	case yaml.MappingNode:
+		scopes := make(map[string]string, len(n.Content)/2)
+		for i := 0; i+1 < len(n.Content); i += 2 {
+			scopes[strings.ToLower(n.Content[i].Value)] = n.Content[i+1].Value
+		}
+		return effectivePermissions("", scopes)
+	}
+	return nil
 }

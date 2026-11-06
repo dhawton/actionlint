@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 
@@ -939,5 +940,74 @@ func TestReusableWorkflowCacheFactory(t *testing.T) {
 	c4 := f.GetCache(nil)
 	if c4.proj != nil {
 		t.Errorf("Null cache should be returned when project is nil: %v", c4)
+	}
+}
+
+func TestReusableWorkflowMetadataJobPermissions(t *testing.T) {
+	src := `on: workflow_call
+permissions:
+  contents: write
+jobs:
+  inherit:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo
+  Override:
+    runs-on: ubuntu-latest
+    permissions:
+      Pull-Requests: write
+      issues: read
+      actions: none
+      unknown: write
+      models: write
+    steps:
+      - run: echo
+  empty:
+    runs-on: ubuntu-latest
+    permissions: {}
+    steps:
+      - run: echo
+  unknown:
+    runs-on: ubuntu-latest
+    permissions: foo
+    steps:
+      - run: echo
+  write-all:
+    runs-on: ubuntu-latest
+    permissions: write-all
+    steps:
+      - run: echo
+`
+	all := map[string]string{}
+	for s, v := range allPermissionScopes {
+		all[s] = "read"
+		if slices.Contains(v, "write") {
+			all[s] = "write"
+		}
+	}
+	want := map[string]map[string]string{
+		"inherit":   {"contents": "write"},
+		"Override":  {"pull-requests": "write", "issues": "read"},
+		"empty":     {},
+		"write-all": all,
+	}
+
+	m, err := parseReusableWorkflowMetadata([]byte(src))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if diff := cmp.Diff(want, m.JobPermissions); diff != "" {
+		t.Fatal("parsed from YAML:\n" + diff)
+	}
+
+	w, errs := Parse([]byte(src))
+	if len(errs) > 0 {
+		t.Fatal(errs)
+	}
+	c := NewLocalReusableWorkflowCache(&Project{"proj", nil}, "proj", nil)
+	c.writeWorkflowCallEvent("test.yaml", w.On[0].(*WorkflowCallEvent), w)
+	m, _ = c.readCache("./test.yaml")
+	if diff := cmp.Diff(want, m.JobPermissions); diff != "" {
+		t.Fatal("converted from AST:\n" + diff)
 	}
 }
