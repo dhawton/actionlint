@@ -97,6 +97,42 @@ func TestReadWriteJSONL(t *testing.T) {
 	}
 }
 
+func TestReadJSONLWithoutTrailingNewline(t *testing.T) {
+	b, err := os.ReadFile(filepath.Join("testdata", "jsonl", "no_new_version.jsonl"))
+	if err != nil {
+		panic(err)
+	}
+	want := string(b)
+
+	testCases := []struct {
+		what    string
+		content string
+	}{
+		{"no newline", strings.TrimRight(want, "\n")},
+		{"trailing whitespace", want + "  "},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.what, func(t *testing.T) {
+			f := filepath.Join(t.TempDir(), "test.jsonl")
+			if err := os.WriteFile(f, []byte(tc.content), 0o644); err != nil {
+				panic(err)
+			}
+			stdout := &bytes.Buffer{}
+			stderr := &bytes.Buffer{}
+
+			status := newGen(stdout, stderr, io.Discard).run([]string{"", "-s", f, "-f", "jsonl"})
+			if status != 0 {
+				t.Fatalf("exit status is non-zero: %d: %s", status, stderr.Bytes())
+			}
+
+			if diff := cmp.Diff(want, stdout.String()); diff != "" {
+				t.Fatalf("read content and output content differ\n%s", diff)
+			}
+		})
+	}
+}
+
 func TestWriteGoToStdout(t *testing.T) {
 	testCases := []struct {
 		in   string
