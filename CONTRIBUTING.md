@@ -155,6 +155,8 @@ When releasing v1.2.3 as example:
 3. Wait until [the CI release job](.github/workflows/release.yaml) completes. GoReleaser publishes the release with binaries,
    and the Docker image is pushed to `ghcr.io/dhawton/actionlint`
 4. Write up release notes on the [release page](https://github.com/dhawton/actionlint/releases)
+5. Bump `version=` in `./scripts/download-actionlint.bash` in another PR. Its CI test downloads that version, so it must
+   come after the release
 
 ## How to generate the manual
 
