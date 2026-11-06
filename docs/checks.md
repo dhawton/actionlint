@@ -2366,6 +2366,8 @@ To solve this issue, actionlint assumes that
 
 - when `secrets:` is omitted in a reusable workflow, the workflow inherits secrets from a caller
 - when `secrets:` exists in a reusable workflow, the workflow inherits no other secret
+- when other events can also trigger the workflow, `secrets` is not strictly typed since repository secrets are available on
+  those events
 
 Following the assumptions,
 
