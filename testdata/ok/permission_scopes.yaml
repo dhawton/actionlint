@@ -2,6 +2,7 @@ on: push
 
 permissions:
   code-quality: read
+  vulnerability-alerts: read
 
 jobs:
   test_job:
@@ -16,5 +17,6 @@ jobs:
     permissions:
       code-quality: none
       copilot-requests: none
+      vulnerability-alerts: none
     steps:
       - run: echo hello
