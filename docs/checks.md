@@ -20,6 +20,7 @@ List of checks:
 - [pyflakes integration for `run:`](#check-pyflakes-integ)
 - [Script injection by potentially untrusted inputs](#untrusted-inputs)
 - [Job dependencies validation](#check-job-deps)
+- [Background and parallel steps](#check-parallel-steps)
 - [Matrix values](#check-matrix-values)
 - [Webhook events validation](#check-webhook-events)
 - [Workflow dispatch event validation](#check-workflow-dispatch-events)
@@ -1226,6 +1227,60 @@ test.yaml:8:3: job "bar" needs job "unknown" which does not exist in this workfl
 ```
 
 [Playground](https://rhysd.github.io/actionlint/#eNqkjDsOAjEMRPucYrptyAXcwRFoEUUMRuEjexXb4vooS0VNNdLMvGdKWNN7eRg7FeBmNgNQkasTTtzGDof98by1I9XrhJJTI+urhXhsk4es/mWBOp8EuXTD0u9LAbiNX3PqU+2t/4k/AQAA//96DTh7)
+
+<a id="check-parallel-steps"></a>
+## Background and parallel steps
+
+Example input:
+
+```yaml
+on: push
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - id: build
+        run: make build
+      - id: server
+        run: ./start-server.sh
+        background: true
+      # ERROR: "build" is not a background step
+      - wait: [server, build]
+      # ERROR: "sever" is not defined before this step
+      - cancel: sever
+      - parallel:
+          - run: make lint
+          # ERROR: "wait" step is not allowed in "parallel" group
+          - wait: server
+```
+
+Output:
+
+```
+test.yaml:13:24: step "build" at "wait" is not a background step. "wait" must refer to a step with "background: true" [parallel-steps]
+   |
+13 |       - wait: [server, build]
+   |                        ^~~~~~
+test.yaml:15:17: step "sever" at "cancel" is not defined before this step. "cancel" must refer to a preceding background step [parallel-steps]
+   |
+15 |       - cancel: sever
+   |                 ^~~~~
+test.yaml:19:13: "wait" step is not allowed in "parallel" group [parallel-steps]
+   |
+19 |           - wait: server
+   |             ^~~~~
+```
+
+[Playground](https://rhysd.github.io/actionlint/#eNpUjk2ugzAMhPecwgd44e1zlaoLB6ySkgbkn/b6VXAVxCrSfOP5stUIu8kyDM8tSRwAlETbC8BWJbSCJatqoWBjBxKlXbwFECDPEZLlMv+S4zbCC1e65N4U4jfxtTr+iyJrcDbK0nHCaX3wZnWOoGzUpz6YNcLNL/7cc+90wjpRabLTFWBHxlKoxD7f0vOzJVe9IJe44xsAAP//+LxToA==)
+
+A step with [`background: true`][background-doc] runs asynchronously. Later steps can wait for it with [`wait:`][wait-doc] or stop
+it with [`cancel:`][cancel-doc]. actionlint checks that each step ID in `wait:` and `cancel:` refers to a background step defined
+before the referencing step in the same job. Step IDs containing `${{ }}` are not checked.
+
+A [`parallel:`][parallel-doc] group runs all of its steps in the background and waits for them at the end of the group. Only `run:`
+and `uses:` steps are allowed in the group, so actionlint reports `background:`, `wait:`, `wait-all:`, `cancel:` and nested
+`parallel:` inside it. Steps in a `parallel:` group cannot be referenced by `wait:` or `cancel:` from outside the group.
 
 <a id="check-matrix-values"></a>
 ## Matrix values
@@ -3217,6 +3272,10 @@ test.yaml:9:14: could not parse as YAML: unknown anchor 'credentials' referenced
 [contexts-doc]: https://docs.github.com/en/actions/learn-github-actions/contexts
 [funcs-doc]: https://docs.github.com/en/actions/learn-github-actions/expressions#functions
 [needs-doc]: https://docs.github.com/en/actions/learn-github-actions/workflow-syntax-for-github-actions#jobsjob_idneeds
+[background-doc]: https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#jobsjob_idstepsbackground
+[wait-doc]: https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#jobsjob_idstepswait
+[cancel-doc]: https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#jobsjob_idstepscancel
+[parallel-doc]: https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#jobsjob_idstepsparallel
 [needs-context-doc]: https://docs.github.com/en/actions/learn-github-actions/contexts#needs-context
 [shell-doc]: https://docs.github.com/en/actions/learn-github-actions/workflow-syntax-for-github-actions#using-a-specific-shell
 [matrix-doc]: https://docs.github.com/en/actions/learn-github-actions/workflow-syntax-for-github-actions#jobsjob_idstrategymatrix

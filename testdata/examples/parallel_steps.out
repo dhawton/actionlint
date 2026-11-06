@@ -1,0 +1,3 @@
+test.yaml:13:24: step "build" at "wait" is not a background step. "wait" must refer to a step with "background: true" [parallel-steps]
+test.yaml:15:17: step "sever" at "cancel" is not defined before this step. "cancel" must refer to a preceding background step [parallel-steps]
+test.yaml:19:13: "wait" step is not allowed in "parallel" group [parallel-steps]

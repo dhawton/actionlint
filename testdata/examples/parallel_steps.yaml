@@ -1,0 +1,19 @@
+on: push
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - id: build
+        run: make build
+      - id: server
+        run: ./start-server.sh
+        background: true
+      # ERROR: "build" is not a background step
+      - wait: [server, build]
+      # ERROR: "sever" is not defined before this step
+      - cancel: sever
+      - parallel:
+          - run: make lint
+          # ERROR: "wait" step is not allowed in "parallel" group
+          - wait: server
