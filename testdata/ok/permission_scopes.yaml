@@ -8,11 +8,13 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       code-quality: write
+      copilot-requests: write
     steps:
       - run: echo hello
   no_access:
     runs-on: ubuntu-latest
     permissions:
       code-quality: none
+      copilot-requests: none
     steps:
       - run: echo hello
