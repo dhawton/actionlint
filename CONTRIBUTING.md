@@ -160,7 +160,7 @@ When releasing v1.2.3 as example:
 
 ## How to generate the manual
 
-`actionlint.1` manual is generated from [`actionlint.1.ronn`](./man/actionlint.1.ronn) by [ronn](https://github.com/rtomayko/ronn).
+`actionlint.1` manual is generated from [`actionlint.1.ronn`](./man/actionlint.1.ronn) by [ronn-ng](https://github.com/apjanke/ronn-ng).
 
 ```sh
 ronn ./man/actionlint.1.ronn

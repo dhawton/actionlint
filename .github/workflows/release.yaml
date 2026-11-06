@@ -16,8 +16,8 @@ jobs:
       - uses: ruby/setup-ruby@v1
         with:
           ruby-version: '3.3'
-      - run: gem install ronn
-      - run: ronn ./man/actionlint.1.ronn
+      - run: gem install ronn-ng
+      - run: ronn --roff ./man/actionlint.1.ronn
       - uses: actions/setup-go@v6
         with:
           go-version: '1.27'
