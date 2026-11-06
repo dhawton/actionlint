@@ -549,6 +549,9 @@ func TestLinterShellcheckRcfile(t *testing.T) {
 	if err != nil {
 		t.Skip("shellcheck is not found")
 	}
+	if out, _ := execabs.Command(shellcheck, "--help").CombinedOutput(); !bytes.Contains(out, []byte("--rcfile")) {
+		t.Skip("shellcheck does not support --rcfile")
+	}
 
 	rc := filepath.Join(t.TempDir(), ".shellcheckrc")
 	if err := os.WriteFile(rc, []byte("disable=SC2006\n"), 0o644); err != nil {
