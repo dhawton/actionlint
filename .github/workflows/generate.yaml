@@ -15,7 +15,7 @@ on:
 
 jobs:
   go-generate:
-    if: ${{ github.repository == 'rhysd/actionlint' }}
+    if: ${{ github.repository == 'dhawton/actionlint' }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -24,7 +24,7 @@ jobs:
       - uses: actions/checkout@v6
       - uses: actions/setup-go@v6
         with:
-          go-version: '1.26'
+          go-version: '1.27'
           check-latest: true
       - name: Check new release on GitHub
         run: go run ./scripts/generate-popular-actions -d
@@ -46,7 +46,7 @@ jobs:
           title: 'Update generated files by CI'
           body: |
             This PR updates some generated files to the latest by running `go generate`.
-            This PR was created by [this workflow run](https://github.com/rhysd/actionlint/actions/runs/${{ github.run_id }}) automatically.
-            List of workflow runs is [here](https://github.com/rhysd/actionlint/actions/workflows/generate.yaml).
-          assignees: rhysd
+            This PR was created by [this workflow run](https://github.com/dhawton/actionlint/actions/runs/${{ github.run_id }}) automatically.
+            List of workflow runs is [here](https://github.com/dhawton/actionlint/actions/workflows/generate.yaml).
+          assignees: dhawton
         if: ${{ steps.diff.outputs.pr == 'true' }}

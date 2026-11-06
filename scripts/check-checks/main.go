@@ -13,8 +13,8 @@ import (
 	"os"
 	"strings"
 
+	"github.com/dhawton/actionlint"
 	"github.com/google/go-cmp/cmp"
-	"github.com/rhysd/actionlint"
 )
 
 func Actionlint(src []byte) ([]byte, error) {
@@ -126,12 +126,11 @@ func (u *Updater) End() ([]byte, error) {
 	return u.out.Bytes(), u.firstErr
 }
 
-func (u *Updater) PlaygroundLink(src []byte) string {
+const playgroundURL = "https://rhysd.github.io/actionlint/#"
+
+// playgroundSource returns the text a playground link encodes for the example source.
+func playgroundSource(src []byte) []byte {
 	var out bytes.Buffer
-
-	b64 := base64.NewEncoder(base64.StdEncoding, &out)
-	comp, _ := zlib.NewWriterLevel(b64, zlib.BestCompression)
-
 	scan := bufio.NewScanner(bytes.NewReader(src))
 	first := true
 	for scan.Scan() {
@@ -142,16 +141,41 @@ func (u *Updater) PlaygroundLink(src []byte) string {
 		if first {
 			first = false
 		} else {
-			comp.Write([]byte{'\n'})
+			out.WriteByte('\n')
 		}
-		comp.Write(l)
+		out.Write(l)
 	}
-	u.err(scan.Err())
+	return out.Bytes()
+}
 
+// decodePlaygroundLink returns the text encoded in a "[Playground](...)" line.
+func decodePlaygroundLink(line string) ([]byte, bool) {
+	enc, ok := strings.CutPrefix(line, "[Playground]("+playgroundURL)
+	if !ok {
+		return nil, false
+	}
+	enc = strings.TrimSuffix(enc, ")")
+	r, err := zlib.NewReader(base64.NewDecoder(base64.StdEncoding, strings.NewReader(enc)))
+	if err != nil {
+		return nil, false
+	}
+	b, err := io.ReadAll(r)
+	if err != nil {
+		return nil, false
+	}
+	return b, true
+}
+
+func (u *Updater) PlaygroundLink(src []byte) string {
+	var out bytes.Buffer
+
+	b64 := base64.NewEncoder(base64.StdEncoding, &out)
+	comp, _ := zlib.NewWriterLevel(b64, zlib.BestCompression)
+	comp.Write(playgroundSource(src))
 	u.err(comp.Close())
 	u.err(b64.Close())
 
-	return fmt.Sprintf("[Playground](https://rhysd.github.io/actionlint/#%s)", out.Bytes())
+	return fmt.Sprintf("[Playground](%s%s)", playgroundURL, out.Bytes())
 }
 
 func (u *Updater) state(s state, reason string) {
@@ -292,7 +316,11 @@ func (u *Updater) Update() {
 			u.input.Reset()
 			u.state(stateEnd, "Skip updating playground link due to the comment")
 		} else if isPlaygroundLink {
-			ln := u.PlaygroundLink(u.input.Bytes())
+			// zlib output differs between Go versions, so keep a link that already encodes the same source
+			ln := l
+			if b, ok := decodePlaygroundLink(l); !ok || !bytes.Equal(b, playgroundSource(u.input.Bytes())) {
+				ln = u.PlaygroundLink(u.input.Bytes())
+			}
 			u.out.WriteString(ln)
 			u.out.WriteByte('\n')
 			u.input.Reset()

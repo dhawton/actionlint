@@ -7,7 +7,7 @@ COPY go.* *.go ./
 COPY cmd cmd/
 ENV CGO_ENABLED=0
 ARG ACTIONLINT_VER=
-RUN go build -v -ldflags "-s -w -X github.com/rhysd/actionlint.version=${ACTIONLINT_VER}" ./cmd/actionlint
+RUN go build -v -ldflags "-s -w -X github.com/dhawton/actionlint.version=${ACTIONLINT_VER}" ./cmd/actionlint
 
 FROM koalaman/shellcheck-alpine:stable AS shellcheck
 
@@ -15,5 +15,6 @@ FROM alpine:${ALPINE_VER}
 COPY --from=builder /go/src/app/actionlint /usr/local/bin/
 COPY --from=shellcheck /bin/shellcheck /usr/local/bin/shellcheck
 RUN apk add --no-cache py3-pyflakes
-USER guest
+# Numeric UID:GID of the `guest` user in Alpine
+USER 405:100
 ENTRYPOINT ["/usr/local/bin/actionlint"]

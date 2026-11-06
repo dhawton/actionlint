@@ -3,7 +3,7 @@
 package actionlint_fuzz
 
 import (
-	"github.com/rhysd/actionlint"
+	"github.com/dhawton/actionlint"
 )
 
 func FuzzGlobGitRef(data []byte) int {

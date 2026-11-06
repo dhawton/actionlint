@@ -64,12 +64,11 @@ around linking libc. `make build` does this by default.
 
 ## Testing
 
-[![CI](https://github.com/rhysd/actionlint/actions/workflows/ci.yaml/badge.svg)](https://github.com/rhysd/actionlint/actions/workflows/ci.yaml)
-[![Generate](https://github.com/rhysd/actionlint/actions/workflows/generate.yaml/badge.svg)](https://github.com/rhysd/actionlint/actions/workflows/generate.yaml)
-[![Problem Matchers](https://github.com/rhysd/actionlint/actions/workflows/matcher.yaml/badge.svg)](https://github.com/rhysd/actionlint/actions/workflows/matcher.yaml)
-[![Download script](https://github.com/rhysd/actionlint/actions/workflows/download.yaml/badge.svg)](https://github.com/rhysd/actionlint/actions/workflows/download.yaml)
-[![Release](https://github.com/rhysd/actionlint/actions/workflows/release.yaml/badge.svg)](https://github.com/rhysd/actionlint/actions/workflows/release.yaml)
-[![Codecov](https://codecov.io/gh/rhysd/actionlint/graph/badge.svg?token=CgcOo0m9oW)](https://codecov.io/gh/rhysd/actionlint)
+[![CI](https://github.com/dhawton/actionlint/actions/workflows/ci.yaml/badge.svg)](https://github.com/dhawton/actionlint/actions/workflows/ci.yaml)
+[![Generate](https://github.com/dhawton/actionlint/actions/workflows/generate.yaml/badge.svg)](https://github.com/dhawton/actionlint/actions/workflows/generate.yaml)
+[![Problem Matchers](https://github.com/dhawton/actionlint/actions/workflows/matcher.yaml/badge.svg)](https://github.com/dhawton/actionlint/actions/workflows/matcher.yaml)
+[![Download script](https://github.com/dhawton/actionlint/actions/workflows/download.yaml/badge.svg)](https://github.com/dhawton/actionlint/actions/workflows/download.yaml)
+[![Release](https://github.com/dhawton/actionlint/actions/workflows/release.yaml/badge.svg)](https://github.com/dhawton/actionlint/actions/workflows/release.yaml)
 
 Run the following command at the root of this repository.
 
@@ -226,7 +225,7 @@ automatically with `go generate`. The command runs [`generate-popular-actions`](
 The script also can detect new major releases of popular actions on GitHub by giving `-d` flag.
 
 The [`generate`](.github/workflows/generate.yaml) CI workflow weekly runs to detect new major releases and update
-`popular_actions.go`. Runs can be found [here](https://github.com/rhysd/actionlint/actions/workflows/generate.yaml).
+`popular_actions.go`. Runs can be found [here](https://github.com/dhawton/actionlint/actions/workflows/generate.yaml).
 
 ### Maintain `all_webhooks.go`
 
