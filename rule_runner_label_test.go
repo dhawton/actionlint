@@ -158,6 +158,18 @@ func TestRuleRunnerLabelCheckLabels(t *testing.T) {
 			labels: []string{"${{matrix.os}}"},
 		},
 		{
+			what:   "xcode-27",
+			labels: []string{"xcode-27"},
+		},
+		{
+			what:   "xcode-27-xlarge",
+			labels: []string{"xcode-27-xlarge"},
+		},
+		{
+			what:   "self-hosted macOS with xcode-27",
+			labels: []string{"self-hosted", "macos", "xcode-27"},
+		},
+		{
 			what:   "ubuntu-26.04",
 			labels: []string{"ubuntu-26.04"},
 		},
@@ -285,6 +297,16 @@ func TestRuleRunnerLabelCheckLabels(t *testing.T) {
 			what:   "macOS XL and normal labels conflict",
 			labels: []string{"macos-26-xlarge", "macos-26"},
 			errs:   []string{`label "macos-26" conflicts with label "macos-26-xlarge"`},
+		},
+		{
+			what:   "Xcode 27 XL and normal labels conflict",
+			labels: []string{"xcode-27-xlarge", "xcode-27"},
+			errs:   []string{`label "xcode-27" conflicts with label "xcode-27-xlarge"`},
+		},
+		{
+			what:   "Xcode 27 and macOS 26 labels conflict",
+			labels: []string{"xcode-27", "macos-26"},
+			errs:   []string{`label "macos-26" conflicts with label "xcode-27"`},
 		},
 		{
 			what:   "larger runner labels conflict",
