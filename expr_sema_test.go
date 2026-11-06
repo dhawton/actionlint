@@ -789,6 +789,21 @@ func TestExprSemanticsCheckOK(t *testing.T) {
 			expected: AnyType{},
 		},
 		{
+			what:     "join() with string",
+			input:    "join('hello')",
+			expected: StringType{},
+		},
+		{
+			what:     "join() with string and separator",
+			input:    "join('hello', ', ')",
+			expected: StringType{},
+		},
+		{
+			what:     "join() with array",
+			input:    "join(github.event.labels.*.name, ', ')",
+			expected: StringType{},
+		},
+		{
 			what:     "case() with expression as predicate",
 			input:    "case(startsWith('hello', 'he'), 'yes', 'no')",
 			expected: AnyType{},
@@ -1044,6 +1059,24 @@ func TestExprSemanticsCheckError(t *testing.T) {
 			expected: []string{
 				"2nd argument of function call is not assignable. \"null\" cannot be assigned to \"string\"",
 				"1st argument of function call is not assignable. \"string\" cannot be assigned to \"array<any>\"",
+			},
+		},
+		{
+			what:  "wrong type at first parameter of join()",
+			input: "join(null)",
+			expected: []string{
+				"1st argument of function call is not assignable. \"null\" cannot be assigned to \"array<string>\"",
+				"1st argument of function call is not assignable. \"null\" cannot be assigned to \"string\"",
+			},
+		},
+		{
+			what:  "wrong number of arguments at join()",
+			input: "join('a', 'b', 'c')",
+			expected: []string{
+				"number of arguments is wrong. function \"join(array<string>, string) -> string\" takes 2 parameters but 3 arguments are given",
+				"number of arguments is wrong. function \"join(array<string>) -> string\" takes 1 parameters but 3 arguments are given",
+				"number of arguments is wrong. function \"join(string, string) -> string\" takes 2 parameters but 3 arguments are given",
+				"number of arguments is wrong. function \"join(string) -> string\" takes 1 parameters but 3 arguments are given",
 			},
 		},
 		{
