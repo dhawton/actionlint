@@ -546,6 +546,12 @@ func TestReusableWorkflowConvertWorkflowPathToSpec(t *testing.T) {
 			proj: &Project{filepath.Join("path", "to", "other-project"), nil},
 			ok:   false,
 		},
+		{
+			what: "sibling project sharing name prefix",
+			proj: &Project{filepath.Join("path", "to", "proj"), nil},
+			path: filepath.Join("workflow.yaml"),
+			ok:   false,
+		},
 	}
 
 	for _, tc := range tests {
