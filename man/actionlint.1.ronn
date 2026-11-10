@@ -86,6 +86,10 @@ with Go template syntax.
   * `-shellcheck-rcfile` <FILEPATH>:
     File path to a shellcheckrc file passed to shellcheck. If empty, shellcheck ignores rc files
 
+  * `-summary`:
+    Print the number of errors and files with errors to stderr after the output, for example
+    "3 errors in 2 files" or "no errors". It does not change the exit status
+
   * `-verbose`:
     Enable verbose output
 

@@ -110,6 +110,25 @@ func (cmd *Command) runLinter(args []string, opts *LinterOptions, initConfig boo
 	return l.LintFiles(args, nil)
 }
 
+// summarizeErrors returns a one-line summary of the given errors such as "3 errors in 2 files".
+func summarizeErrors(errs []*Error) string {
+	if len(errs) == 0 {
+		return "no errors"
+	}
+	files := map[string]struct{}{}
+	for _, e := range errs {
+		files[e.Filepath] = struct{}{}
+	}
+	return fmt.Sprintf("%s in %s", plural(len(errs), "error"), plural(len(files), "file"))
+}
+
+func plural(n int, word string) string {
+	if n == 1 {
+		return "1 " + word
+	}
+	return fmt.Sprintf("%d %ss", n, word)
+}
+
 type ignorePatternFlags []string
 
 func (i *ignorePatternFlags) String() string {
@@ -130,6 +149,7 @@ func (cmd *Command) Main(args []string) int {
 	var initConfig bool
 	var noColor bool
 	var color bool
+	var summary bool
 
 	flags := flag.NewFlagSet(args[0], flag.ContinueOnError)
 	flags.SetOutput(cmd.Stderr)
@@ -145,6 +165,7 @@ func (cmd *Command) Main(args []string) int {
 	flags.BoolVar(&color, "color", false, "Always enable colorful output. This is useful to force colorful outputs")
 	flags.BoolVar(&opts.Verbose, "verbose", false, "Enable verbose output")
 	flags.BoolVar(&opts.Debug, "debug", false, "Enable debug output (for development)")
+	flags.BoolVar(&summary, "summary", false, "Print the number of errors and files with errors to stderr after the output")
 	flags.BoolVar(&ver, "version", false, "Show version and how this binary was installed")
 	flags.StringVar(&opts.StdinFileName, "stdin-filename", "<stdin>", "File name when reading input from stdin")
 	flags.Usage = func() {
@@ -186,6 +207,9 @@ func (cmd *Command) Main(args []string) int {
 	if err != nil {
 		fmt.Fprintln(cmd.Stderr, err.Error())
 		return ExitStatusFailure
+	}
+	if summary && !initConfig {
+		fmt.Fprintln(cmd.Stderr, summarizeErrors(errs))
 	}
 	if len(errs) > 0 {
 		return ExitStatusSuccessProblemFound // Linter found some issues, yay!

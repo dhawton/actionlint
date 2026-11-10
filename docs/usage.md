@@ -212,6 +212,22 @@ In `{{ }}` placeholder, input can be piped and action can be used to transform t
 
 Note that special characters escaped with backslash like `\n` in the format string are automatically unescaped.
 
+### Print a summary
+
+`-summary` option prints one line to stderr after the error output. It tells how many errors were found and in how many files.
+
+```sh
+actionlint -summary
+```
+
+```
+3 errors in 2 files
+```
+
+When no error was found, it prints `no errors`. The summary goes to stderr, so it can be combined with `-oneline` and `-format`
+options and the output on stdout stays as is (e.g. valid JSON). The summary is not colored. The option does not change the
+exit status, and nothing is printed when actionlint stops due to an invalid option or a fatal error.
+
 ### Exit status
 
 `actionlint` command exits with one of the following exit statuses.
