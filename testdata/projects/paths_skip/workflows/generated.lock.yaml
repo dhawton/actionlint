@@ -1,0 +1,15 @@
+# This file is skipped by the "skip" config so none of the errors below are reported.
+# It is still read as a reusable workflow called from caller.yaml.
+on:
+  workflow_call:
+    inputs:
+      name:
+        type: string
+        required: true
+
+jobs:
+  test:
+    runs-on: unknown-label
+    unknown-key: foo
+    steps:
+      - run: echo ${{ unknown.context }}

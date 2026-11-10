@@ -49,6 +49,10 @@ type PathConfig struct {
 	// Ignore is a list of patterns. They are used for ignoring errors by matching to the error messages.
 	// It is similar to the "-ignore" command line option.
 	Ignore IgnorePatterns `yaml:"ignore"`
+	// Skip is a flag to skip linting the matched files entirely. Skipped files are not parsed and no
+	// error is reported for them. They can still be read as local reusable workflows called by other
+	// workflows.
+	Skip bool `yaml:"skip"`
 }
 
 // Config is configuration of actionlint. This struct instance is parsed from "actionlint.yaml"
@@ -87,6 +91,17 @@ func (cfg *Config) PathConfigs(path string) []PathConfig {
 		}
 	}
 	return ret
+}
+
+// Skips returns whether linting the given file path should be skipped due to the "skip" configuration
+// in the "paths" mapping. The path must be relative to the root of the project.
+func (cfg *Config) Skips(path string) bool {
+	for _, c := range cfg.PathConfigs(path) {
+		if c.Skip {
+			return true
+		}
+	}
+	return false
 }
 
 // ParseConfig parses the given bytes as an actionlint config file. When deserializing the YAML file
@@ -153,9 +168,13 @@ config-variables: null
 #
 # "ignore" is an array of regular expression patterns. Matched error messages
 # are ignored. This is similar to the "-ignore" command line option.
+# "skip" is a boolean. When it is true, matched files are not linted at all.
+# This is useful for generated workflows.
 paths:
 #  .github/workflows/**/*.yml:
 #    ignore: []
+#  .github/workflows/**/*.lock.yml:
+#    skip: true
 
 # Require remote actions and reusable workflows at "uses:" to be pinned to a
 # full length commit SHA.

@@ -42,6 +42,9 @@ paths:
     ignore:
       # Ignore errors from the old runner check. This may be useful for (outdated) self-hosted runner environment.
       - 'the runner of ".+" action is too old to run on GitHub Actions'
+  # This pattern matches generated workflow files such as gh-aw's '*.lock.yml'. They are not linted at all.
+  .github/workflows/**/*.lock.yml:
+    skip: true
 
 # Require remote actions and reusable workflows to be pinned to a full length commit SHA.
 require-commit-hash: true
@@ -60,6 +63,12 @@ require-commit-hash: true
     - `ignore`: The configuration to ignore (filter) the errors by the error messages. This is an array of regular
       expressions. When one of the patterns matches the error message, the error will be ignored. It's similar to the
       `-ignore` command line option.
+    - `skip`: When `true`, the matched files are not linted at all. They are not parsed and no error is reported for them.
+      This is useful for generated workflow files. It applies to files found by actionlint and to files given as command
+      line arguments, but not to input from stdin. A skipped workflow can still be called as a local reusable workflow
+      (`uses: ./.github/workflows/x.lock.yml`) from other workflows, and its inputs, secrets, and outputs are still checked
+      at the caller side. When one of the matched patterns has `skip: true`, the file is skipped. With `-verbose`, skipped
+      files are logged. The default value is `false`.
 - `require-commit-hash`: When `true`, actionlint reports remote actions (`owner/repo@ref`) and remote reusable workflows
   (`owner/repo/path/to/workflow.yml@ref`) at `uses:` whose ref is not a full length (40 characters) commit SHA. Tags,
   branches, and short SHAs are reported. Local (`./`) and self repository (`$/`) references and `docker://` images are not

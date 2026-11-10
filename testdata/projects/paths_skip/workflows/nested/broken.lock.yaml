@@ -1,0 +1,4 @@
+# This file is skipped by the "skip" config. It is not even parsed.
+on: [
+jobs:
+  - this is broken

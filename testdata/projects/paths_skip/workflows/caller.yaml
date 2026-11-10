@@ -1,0 +1,10 @@
+on: push
+
+jobs:
+  ok:
+    uses: ./workflows/generated.lock.yaml
+    with:
+      name: hello
+  # This error is reported since the metadata of the skipped reusable workflow is still read
+  missing-input:
+    uses: ./workflows/generated.lock.yaml
