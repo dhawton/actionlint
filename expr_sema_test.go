@@ -11,19 +11,21 @@ import (
 
 func TestExprSemanticsCheckOK(t *testing.T) {
 	testCases := []struct {
-		what          string
-		input         string
-		expected      ExprType
-		funcs         map[string][]*FuncSignature
-		matrix        *ObjectType
-		steps         *ObjectType
-		needs         *ObjectType
-		inputs        *ObjectType
-		secrets       *ObjectType
-		jobs          *ObjectType
-		availContexts []string
-		availSPFuncs  []string
-		configVars    []string
+		what            string
+		input           string
+		expected        ExprType
+		funcs           map[string][]*FuncSignature
+		matrix          *ObjectType
+		steps           *ObjectType
+		needs           *ObjectType
+		inputs          *ObjectType
+		secrets         *ObjectType
+		jobs            *ObjectType
+		availContexts   []string
+		availSPFuncs    []string
+		configVars      []string
+		configSecrets   []string
+		declaredSecrets []string
 	}{
 		{
 			what:     "null",
@@ -685,6 +687,43 @@ func TestExprSemanticsCheckOK(t *testing.T) {
 			configVars: []string{"some_variable"},
 		},
 		{
+			what:     "secret without config-secrets",
+			input:    "secrets.MY_SECRET",
+			expected: StringType{},
+		},
+		{
+			what:          "known secret",
+			input:         "secrets.MY_SECRET",
+			expected:      StringType{},
+			configSecrets: []string{"MY_SECRET"},
+		},
+		{
+			what:          "secret name is case insensitive",
+			input:         "secrets.My_Secret",
+			expected:      StringType{},
+			configSecrets: []string{"my_secret"},
+		},
+		{
+			what:          "GITHUB_TOKEN is always allowed",
+			input:         "secrets.GITHUB_TOKEN",
+			expected:      StringType{},
+			configSecrets: []string{},
+		},
+		{
+			what:            "secret declared at workflow_call is always allowed",
+			input:           "secrets.DECLARED",
+			expected:        StringType{},
+			configSecrets:   []string{"OTHER"},
+			declaredSecrets: []string{"declared"},
+		},
+		{
+			what:          "strictly typed secret is not checked by config-secrets",
+			input:         "secrets.DECLARED",
+			expected:      StringType{},
+			secrets:       NewStrictObjectType(map[string]ExprType{"declared": StringType{}}),
+			configSecrets: []string{},
+		},
+		{
 			what:     "narrow type of && operator by assumed value (#384)",
 			input:    "('foo' && 10) || 20",
 			expected: NumberType{},
@@ -828,7 +867,8 @@ func TestExprSemanticsCheckOK(t *testing.T) {
 				t.Fatal("Parse error:", tc.input)
 			}
 
-			c := NewExprSemanticsChecker(false, nil)
+			c := NewExprSemanticsChecker(false, tc.configVars)
+			c.SetConfigSecrets(tc.configSecrets, tc.declaredSecrets)
 			c.SetContextAvailability([]string{"github", "job", "jobs", "matrix", "steps", "needs", "env", "inputs", "secrets", "vars", "runner"})
 			if tc.funcs != nil {
 				c.funcs = tc.funcs
@@ -873,16 +913,19 @@ func TestExprSemanticsCheckOK(t *testing.T) {
 
 func TestExprSemanticsCheckError(t *testing.T) {
 	testCases := []struct {
-		what       string
-		input      string
-		expected   []string
-		funcs      map[string][]*FuncSignature
-		matrix     *ObjectType
-		steps      *ObjectType
-		needs      *ObjectType
-		availCtx   []string
-		availSP    []string
-		configVars []string
+		what            string
+		input           string
+		expected        []string
+		funcs           map[string][]*FuncSignature
+		matrix          *ObjectType
+		steps           *ObjectType
+		needs           *ObjectType
+		availCtx        []string
+		availSP         []string
+		configVars      []string
+		secrets         *ObjectType
+		configSecrets   []string
+		declaredSecrets []string
 	}{
 		{
 			what:  "undefined variable",
@@ -1353,6 +1396,32 @@ func TestExprSemanticsCheckError(t *testing.T) {
 			configVars: []string{"FOO_BAR"},
 		},
 		{
+			what:  "no secret is allowed by config-secrets",
+			input: "secrets.UNKNOWN_SECRET",
+			expected: []string{
+				"secret \"unknown_secret\" is not in \"config-secrets\" in actionlint.yaml, which is empty. add the secret to \"config-secrets\"",
+			},
+			configSecrets: []string{},
+		},
+		{
+			what:  "unknown secret by config-secrets",
+			input: "secrets.UNKNOWN_SECRET",
+			expected: []string{
+				"secret \"unknown_secret\" is not in \"config-secrets\" in actionlint.yaml. add the secret to \"config-secrets\" if it is defined in your repository, organization, or environment. listed secrets are \"FOO\", \"MY_SECRET\"",
+			},
+			configSecrets:   []string{"MY_SECRET", "FOO"},
+			declaredSecrets: []string{"declared"},
+		},
+		{
+			what:  "strictly typed unknown secret is reported only once",
+			input: "secrets.UNKNOWN_SECRET",
+			expected: []string{
+				"property \"unknown_secret\" is not defined in object type",
+			},
+			secrets:       NewStrictObjectType(map[string]ExprType{"declared": StringType{}}),
+			configSecrets: []string{"UNKNOWN_SECRET"},
+		},
+		{
 			what:  "config variable naming convention",
 			input: "vars.FOO-BAR",
 			expected: []string{
@@ -1406,6 +1475,10 @@ func TestExprSemanticsCheckError(t *testing.T) {
 			}
 
 			c := NewExprSemanticsChecker(false, tc.configVars)
+			c.SetConfigSecrets(tc.configSecrets, tc.declaredSecrets)
+			if tc.secrets != nil {
+				c.UpdateSecrets(tc.secrets)
+			}
 			if tc.funcs != nil {
 				c.funcs = tc.funcs // Set functions for testing
 			}

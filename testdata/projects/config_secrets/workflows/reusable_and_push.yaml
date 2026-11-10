@@ -1,0 +1,17 @@
+on:
+  push:
+  workflow_call:
+    secrets:
+      declared_secret:
+        required: false
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      # Declared secrets are always allowed
+      - run: echo '${{ secrets.DECLARED_SECRET }}'
+      # Listed in config-secrets and available on push
+      - run: echo '${{ secrets.MY_SECRET }}'
+      # ERROR: Neither declared nor listed
+      - run: echo '${{ secrets.PIYO }}'
