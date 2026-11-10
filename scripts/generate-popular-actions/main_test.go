@@ -633,7 +633,9 @@ func TestWriteRegistryKeepsDefaultRegistryFormat(t *testing.T) {
 	if err := writeRegistry(&b, regs); err != nil {
 		t.Fatal(err)
 	}
-	if want, have := string(defaultPopularActionsJSON), b.String(); want != have {
+	// Git may check out the file with CRLF on Windows
+	want := strings.ReplaceAll(string(defaultPopularActionsJSON), "\r\n", "\n")
+	if have := b.String(); want != have {
 		t.Fatal(cmp.Diff(want, have))
 	}
 }
