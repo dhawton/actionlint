@@ -369,6 +369,9 @@ func (l *Linter) LintFiles(filepaths []string, project *Project) ([]*Error, erro
 			}
 			proj = p
 		}
+		if l.skips(w.path, proj) {
+			continue
+		}
 		ac := acf.GetCache(proj) // #173
 		rwc := rwcf.GetCache(proj)
 
@@ -448,6 +451,10 @@ func (l *Linter) LintFile(path string, project *Project) ([]*Error, error) {
 			return nil, err
 		}
 		project = p
+	}
+
+	if l.skips(path, project) {
+		return []*Error{}, nil
 	}
 
 	src, err := os.ReadFile(path)
@@ -542,13 +549,7 @@ func (l *Linter) check(
 		l.log("Using project at", project.RootDir())
 	}
 
-	var cfg *Config
-	if l.defaultConfig != nil {
-		// `-config-file` option has higher priority than repository config file
-		cfg = l.defaultConfig
-	} else if project != nil {
-		cfg = project.Config()
-	}
+	cfg := l.config(project)
 	if cfg != nil {
 		l.debug("Config: %#v", cfg)
 	} else {
@@ -657,6 +658,53 @@ func (l *Linter) check(
 	}
 
 	return all, nil
+}
+
+// config returns the configuration applied to files in the given project. The project parameter can
+// be nil.
+func (l *Linter) config(project *Project) *Config {
+	if l.defaultConfig != nil {
+		// `-config-file` option has higher priority than repository config file
+		return l.defaultConfig
+	}
+	if project != nil {
+		return project.Config()
+	}
+	return nil
+}
+
+// skips returns whether linting the file at the given path should be skipped due to the "skip"
+// configuration in "paths". The project parameter can be nil.
+func (l *Linter) skips(path string, project *Project) bool {
+	cfg := l.config(project)
+	if cfg == nil || len(cfg.Paths) == 0 {
+		return false
+	}
+	p := l.configPath(path, project)
+	if !cfg.Skips(p) {
+		return false
+	}
+	l.log("Skipped", p, "due to \"skip\" configuration in \"paths\"")
+	return true
+}
+
+// configPath returns the file path to match with the glob patterns in "paths" configuration. It is
+// relative to the project root when the file is in the project. Otherwise it is relative to the
+// current working directory if possible.
+func (l *Linter) configPath(path string, project *Project) string {
+	abs := absPath(path)
+	if project != nil {
+		r, err := filepath.Rel(absPath(project.RootDir()), abs)
+		if err == nil && r != ".." && !strings.HasPrefix(r, ".."+string(filepath.Separator)) {
+			return r
+		}
+	}
+	if l.cwd != "" {
+		if r, err := filepath.Rel(absPath(l.cwd), abs); err == nil {
+			return r
+		}
+	}
+	return path
 }
 
 func (l *Linter) filterErrors(errs []*Error, cfgs []PathConfig) []*Error {

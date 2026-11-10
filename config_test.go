@@ -334,3 +334,75 @@ func TestConfigGenerateDefaultConfigFileError(t *testing.T) {
 		t.Fatalf("unexpected error message: %q", msg)
 	}
 }
+
+func TestConfigSkips(t *testing.T) {
+	src := `
+paths:
+  .github/workflows/**/*.lock.yml:
+    skip: true
+  .github/workflows/keep.lock.yml:
+    skip: false
+  .github/workflows/*.yml:
+    ignore: ['foo']
+  .github/workflows/explicit.yml:
+    skip: false
+`
+	c, err := ParseConfig([]byte(src))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tests := []struct {
+		path string
+		want bool
+	}{
+		{".github/workflows/agent.lock.yml", true},
+		{".github/workflows/nested/agent.lock.yml", true},
+		{filepath.Join(".github", "workflows", "agent.lock.yml"), true},
+		// One matching config with `skip: true` is enough even if another matching config has `skip: false`
+		{".github/workflows/keep.lock.yml", true},
+		{".github/workflows/agent.yml", false},
+		{".github/workflows/explicit.yml", false},
+		{".github/workflows/agent.lock.yaml", false},
+		{"other/agent.lock.yml", false},
+	}
+	for _, tc := range tests {
+		t.Run(tc.path, func(t *testing.T) {
+			if have := c.Skips(tc.path); have != tc.want {
+				t.Fatalf("wanted %v but got %v for %q", tc.want, have, tc.path)
+			}
+		})
+	}
+
+	var nilCfg *Config
+	if nilCfg.Skips(".github/workflows/agent.lock.yml") {
+		t.Fatal("nil config should not skip any file")
+	}
+}
+
+func TestConfigParseSkip(t *testing.T) {
+	tests := []struct {
+		input string
+		want  bool
+	}{
+		{``, false},
+		{`skip: false`, false},
+		{`skip: true`, true},
+		{"skip: true\nignore: ['foo']", true},
+	}
+	for _, tc := range tests {
+		t.Run(tc.input, func(t *testing.T) {
+			var c PathConfig
+			if err := yaml.Unmarshal([]byte(tc.input), &c); err != nil {
+				t.Fatal(err)
+			}
+			if c.Skip != tc.want {
+				t.Fatalf("wanted %v but got %v", tc.want, c.Skip)
+			}
+		})
+	}
+
+	if _, err := ParseConfig([]byte("paths:\n  foo.yml:\n    skip: [true]\n")); err == nil {
+		t.Fatal("invalid \"skip\" value was accepted")
+	}
+}

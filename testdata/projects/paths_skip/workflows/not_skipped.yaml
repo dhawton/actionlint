@@ -1,0 +1,8 @@
+on: push
+
+jobs:
+  test:
+    # This error is reported since "skip" is false
+    runs-on: unknown-label
+    steps:
+      - run: echo

@@ -500,6 +500,109 @@ jobs:
 	}
 }
 
+func TestLinterSkipPaths(t *testing.T) {
+	root := t.TempDir()
+	wf := filepath.Join(root, ".github", "workflows")
+	for _, d := range []string{filepath.Join(root, ".git"), filepath.Join(wf, "nested"), filepath.Join(root, "sub")} {
+		if err := os.MkdirAll(d, 0755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	broken := []byte("on: [\njobs:\n  - broken\n")
+	invalid := []byte("on: push\njobs:\n  test:\n    runs-on: unknown-label\n    steps:\n      - run: echo\n")
+	files := map[string][]byte{
+		filepath.Join(root, ".github", "actionlint.yaml"): []byte("paths:\n  .github/workflows/**/*.lock.yml:\n    skip: true\n"),
+		filepath.Join(wf, "agent.lock.yml"):               broken,
+		filepath.Join(wf, "nested", "agent.lock.yml"):     broken,
+		filepath.Join(wf, "test.yml"):                     invalid,
+	}
+	for p, b := range files {
+		if err := os.WriteFile(p, b, 0644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	skipped := []string{filepath.Join(wf, "agent.lock.yml"), filepath.Join(wf, "nested", "agent.lock.yml")}
+	notSkipped := filepath.Join(wf, "test.yml")
+
+	// Run the linter in the root directory and in a sub-directory of the repository. The glob patterns
+	// must be matched to the paths relative to the repository root in both cases.
+	for _, cwd := range []string{root, filepath.Join(root, "sub")} {
+		newLinter := func(t *testing.T) (*Linter, *strings.Builder) {
+			var log strings.Builder
+			l, err := NewLinter(io.Discard, &LinterOptions{WorkingDir: cwd, Verbose: true, LogWriter: &log})
+			if err != nil {
+				t.Fatal(err)
+			}
+			return l, &log
+		}
+
+		checkSkipped := func(t *testing.T, errs []*Error, log string) {
+			t.Helper()
+			for _, err := range errs {
+				if strings.HasSuffix(err.Filepath, ".lock.yml") {
+					t.Errorf("error in skipped file: %s", err)
+				}
+			}
+			for _, p := range []string{".github/workflows/agent.lock.yml", ".github/workflows/nested/agent.lock.yml"} {
+				want := fmt.Sprintf("Skipped %s due to \"skip\" configuration", filepath.FromSlash(p))
+				if !strings.Contains(log, want) {
+					t.Errorf("log does not contain %q: %s", want, log)
+				}
+			}
+		}
+
+		t.Run("LintRepository/"+cwd, func(t *testing.T) {
+			l, log := newLinter(t)
+			errs, err := l.LintRepository(cwd)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if len(errs) != 1 || !strings.Contains(errs[0].Message, "unknown-label") {
+				t.Fatalf("wanted one error from test.yml but got %v", errs)
+			}
+			checkSkipped(t, errs, log.String())
+		})
+
+		t.Run("LintFiles/"+cwd, func(t *testing.T) {
+			l, log := newLinter(t)
+			errs, err := l.LintFiles(append(skipped, notSkipped), nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if len(errs) != 1 || !strings.Contains(errs[0].Message, "unknown-label") {
+				t.Fatalf("wanted one error from test.yml but got %v", errs)
+			}
+			checkSkipped(t, errs, log.String())
+		})
+
+		t.Run("LintFile/"+cwd, func(t *testing.T) {
+			for _, p := range skipped {
+				l, _ := newLinter(t)
+				errs, err := l.LintFile(p, nil)
+				if err != nil {
+					t.Fatal(err)
+				}
+				if len(errs) != 0 {
+					t.Fatalf("wanted no error for %q but got %v", p, errs)
+				}
+			}
+		})
+	}
+
+	// The "skip" configuration is not applied to the content given directly (e.g. from stdin)
+	l, err := NewLinter(io.Discard, &LinterOptions{WorkingDir: root})
+	if err != nil {
+		t.Fatal(err)
+	}
+	errs, err := l.Lint(skipped[0], broken, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(errs) == 0 {
+		t.Fatal("content given directly should not be skipped")
+	}
+}
+
 func TestLinterLintStdinReadError(t *testing.T) {
 	l, err := NewLinter(io.Discard, &LinterOptions{})
 	if err != nil {

@@ -1,0 +1,5 @@
+paths:
+  workflows/**/*.lock.yaml:
+    skip: true
+  workflows/not_skipped.yaml:
+    skip: false
