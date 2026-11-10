@@ -296,6 +296,7 @@ var BuiltinGlobalVariableTypes = map[string]ExprType{
 		"graphql_url":               StringType{},
 		"head_ref":                  StringType{},
 		"job":                       StringType{},
+		"job_workflow_sha":          StringType{}, // Note: Only documented as an OIDC claim. Set for jobs in a reusable workflow
 		"output":                    StringType{}, // Note: Undocumented
 		"path":                      StringType{},
 		"ref":                       StringType{},
