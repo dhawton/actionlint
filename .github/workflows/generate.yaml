@@ -18,6 +18,7 @@ jobs:
     if: ${{ github.repository == 'dhawton/actionlint' }}
     runs-on: ubuntu-latest
     permissions:
+      actions: write # To start CI on the pull request
       contents: write
       pull-requests: write
     steps:
@@ -26,11 +27,12 @@ jobs:
         with:
           go-version: '1.27'
           check-latest: true
-      - name: Check new release on GitHub
-        run: go run ./scripts/generate-popular-actions -d
+      # Adds new major versions of popular actions to the registry, so `go generate` fetches them
+      - name: Add new releases to the registry
+        run: go run ./scripts/generate-popular-actions -d -u -r scripts/generate-popular-actions/popular_actions.json
       - run: go generate
       - run: |
-          if git diff-files --quiet; then
+          if git diff --quiet; then
             echo "pr=false" >> "$GITHUB_OUTPUT"
           else
             git diff
@@ -38,8 +40,10 @@ jobs:
           fi
         id: diff
       - uses: peter-evans/create-pull-request@v8
+        id: cpr
         with:
-          branch: 'ci/${{ github.run_id }}'
+          branch: ci/generate
+          delete-branch: true
           commit-message: 'update generated files by `go generate` on CI'
           committer: 'github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>'
           author: 'github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>'
@@ -50,3 +54,12 @@ jobs:
             List of workflow runs is [here](https://github.com/dhawton/actionlint/actions/workflows/generate.yaml).
           assignees: dhawton
         if: ${{ steps.diff.outputs.pr == 'true' }}
+      # Pull requests made with GITHUB_TOKEN do not start other workflows, so start CI by hand.
+      # workflow_dispatch is the one event GITHUB_TOKEN may start.
+      - name: Run CI on the pull request
+        if: ${{ steps.cpr.outputs.pull-request-operation == 'created' || steps.cpr.outputs.pull-request-operation == 'updated' }}
+        run: gh workflow run ci.yaml --ref "$BRANCH"
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          BRANCH: ${{ steps.cpr.outputs.pull-request-branch }}

@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"io"
 	"os"
@@ -599,5 +600,97 @@ func TestActionBuildSpec(t *testing.T) {
 	want = "foo/bar/a/b@v1"
 	if have != want {
 		t.Errorf("Wanted %q but have %q", want, have)
+	}
+}
+
+func TestBumpTag(t *testing.T) {
+	tests := []struct {
+		in   string
+		want string
+	}{
+		{"v1", "v2"},
+		{"v9", "v10"},
+		{"v4.x", "v5.x"},
+		{"v2.0.0", "v3.0.0"},
+		{"v4.3.7", "v5.0.0"},
+		{"release/v2", "release/v3"},
+		{"releases/v3", "releases/v4"},
+		{"latest", ""},
+	}
+	for _, tc := range tests {
+		if have := bumpTag(tc.in); have != tc.want {
+			t.Errorf("bumpTag(%q) = %q but wanted %q", tc.in, have, tc.want)
+		}
+	}
+}
+
+func TestWriteRegistryKeepsDefaultRegistryFormat(t *testing.T) {
+	regs, err := newGen(io.Discard, io.Discard, io.Discard).registry()
+	if err != nil {
+		t.Fatal(err)
+	}
+	var b bytes.Buffer
+	if err := writeRegistry(&b, regs); err != nil {
+		t.Fatal(err)
+	}
+	// Git may check out the file with CRLF on Windows
+	want := strings.ReplaceAll(string(defaultPopularActionsJSON), "\r\n", "\n")
+	if have := b.String(); want != have {
+		t.Fatal(cmp.Diff(want, have))
+	}
+}
+
+func TestDetectNewReleaseAndUpdateRegistry(t *testing.T) {
+	src, err := os.ReadFile(filepath.Join("testdata", "registry", "new_release.json"))
+	if err != nil {
+		panic(err)
+	}
+	f := filepath.Join(t.TempDir(), "registry.json")
+	if err := os.WriteFile(f, src, 0644); err != nil {
+		panic(err)
+	}
+
+	stdout := &bytes.Buffer{}
+	status := newGen(stdout, io.Discard, io.Discard).run([]string{"test", "-d", "-u", "-r", f})
+	if status != 0 {
+		t.Fatal("exit status is not 0:", status)
+	}
+	out := stdout.String()
+	for _, want := range []string{"https://github.com/rhysd/action-setup-vim/tree/v1", "Updated " + f} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("expected %q is not included in stdout: %q", want, out)
+		}
+	}
+
+	b, err := os.ReadFile(f)
+	if err != nil {
+		panic(err)
+	}
+	var regs []*registry
+	if err := json.Unmarshal(b, &regs); err != nil {
+		t.Fatal(err)
+	}
+	if len(regs) != 1 {
+		t.Fatal("registry has unexpected number of entries:", regs)
+	}
+	r := regs[0]
+	if len(r.Tags) < 2 || r.Tags[0] != "v0" || r.Tags[1] != "v1" {
+		t.Fatal("v1 was not added to tags:", r.Tags)
+	}
+	if want := bumpTag(r.Tags[len(r.Tags)-1]); r.Next != want {
+		t.Fatalf("next tag is %q but wanted %q", r.Next, want)
+	}
+}
+
+func TestUpdateFlagNeedsDetectAndRegistryFlags(t *testing.T) {
+	for _, args := range [][]string{{"test", "-u"}, {"test", "-d", "-u"}, {"test", "-u", "-r", "foo.json"}} {
+		stderr := &bytes.Buffer{}
+		status := newGen(io.Discard, stderr, io.Discard).run(args)
+		if status != 1 {
+			t.Fatalf("exit status is not 1 for %v: %d", args, status)
+		}
+		if !strings.Contains(stderr.String(), "-u flag needs -d flag and -r flag") {
+			t.Fatalf("unexpected stderr for %v: %q", args, stderr.String())
+		}
 	}
 }
