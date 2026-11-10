@@ -28,6 +28,11 @@ config-variables:
   - JOB_NAME
   - ENVIRONMENT_STAGE
 
+# Secrets in array of strings defined in your repository, organization, or environment.
+config-secrets:
+  - DEPLOY_TOKEN
+  - NPM_TOKEN
+
 # Path-specific configurations.
 paths:
   # Glob pattern relative to the repository root for matching files. The path separator is always '/'.
@@ -55,6 +60,11 @@ require-commit-hash: true
     is available.
 - `config-variables`: [Configuration variables][vars]. When an array is set, actionlint will check `vars` properties strictly.
   An empty array means no variable is allowed. The default value `null` disables the check.
+- `config-secrets`: [Secrets][secrets]. When an array is set, actionlint reports `secrets.*` properties which are not in the
+  list. Names are case-insensitive. `GITHUB_TOKEN` and the secrets declared at `on.workflow_call.secrets` of the workflow
+  are always allowed. An empty array means only those are allowed. The default value `null` disables the check. When
+  `workflow_call` is the only trigger of the workflow and it declares `secrets:`, the `secrets` context is already typed
+  strictly from the declarations, so this option does not change the result.
 - `paths`: Configurations for specific file path patterns. This is a mapping from a glob pattern and the corresponding
   configuration.
   - `{glob}`: A file path glob pattern to apply the configuration. The path separator is always '/'. It is matched to the
@@ -91,4 +101,5 @@ vim .github/actionlint.yaml
 [Super-Linter]: https://github.com/super-linter/super-linter
 [pat]: https://pkg.go.dev/path#Match
 [vars]: https://docs.github.com/en/actions/learn-github-actions/variables
+[secrets]: https://docs.github.com/en/actions/security-for-github-actions/security-guides/using-secrets-in-github-actions
 [doublestar]: https://github.com/bmatcuk/doublestar

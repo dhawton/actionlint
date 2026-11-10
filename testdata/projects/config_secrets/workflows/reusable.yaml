@@ -1,0 +1,14 @@
+on:
+  workflow_call:
+    secrets:
+      declared_secret:
+        required: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      # Declared secrets are typed strictly so config-secrets does not apply
+      - run: echo '${{ secrets.DECLARED_SECRET }}'
+      # ERROR: Not declared (reported by the strict type, not by config-secrets)
+      - run: echo '${{ secrets.MY_SECRET }}'

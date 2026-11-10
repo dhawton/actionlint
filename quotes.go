@@ -1,7 +1,7 @@
 package actionlint
 
 import (
-	"sort"
+	"slices"
 	"strconv"
 	"strings"
 )
@@ -59,8 +59,11 @@ func quotes(ss []string) string {
 	return b.build()
 }
 
+// sortedQuotes quotes the strings in sorted order. It does not modify the given slice since the slice may be
+// shared between goroutines (e.g. a list in Config).
 func sortedQuotes(ss []string) string {
-	sort.Strings(ss)
+	ss = slices.Clone(ss)
+	slices.Sort(ss)
 	return quotes(ss)
 }
 

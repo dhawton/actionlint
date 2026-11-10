@@ -291,7 +291,10 @@ func TestConfigGenerateDefaultConfigFileOK(t *testing.T) {
 		t.Fatal(c.SelfHostedRunner.Labels)
 	}
 	if c.ConfigVariables != nil {
-		t.Fatal(c.SelfHostedRunner.Labels)
+		t.Fatal(c.ConfigVariables)
+	}
+	if c.ConfigSecrets != nil {
+		t.Fatal(c.ConfigSecrets)
 	}
 	if len(c.Paths) != 0 {
 		t.Fatal(c.Paths)
@@ -318,6 +321,32 @@ func TestConfigParseRequireCommitHash(t *testing.T) {
 			}
 			if c.RequireCommitHash != tc.want {
 				t.Fatalf("wanted %v but got %v", tc.want, c.RequireCommitHash)
+			}
+		})
+	}
+}
+
+func TestConfigParseConfigSecrets(t *testing.T) {
+	tests := []struct {
+		input string
+		want  []string
+	}{
+		{"", nil},
+		{"config-secrets: null", nil},
+		{"config-secrets: []", []string{}},
+		{"config-secrets: [MY_SECRET, api_key]", []string{"MY_SECRET", "api_key"}},
+	}
+	for _, tc := range tests {
+		t.Run(tc.input, func(t *testing.T) {
+			c, err := ParseConfig([]byte(tc.input))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if (tc.want == nil) != (c.ConfigSecrets == nil) {
+				t.Fatalf("wanted %#v but got %#v", tc.want, c.ConfigSecrets)
+			}
+			if diff := cmp.Diff(tc.want, c.ConfigSecrets); diff != "" {
+				t.Fatal(diff)
 			}
 		})
 	}

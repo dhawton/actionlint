@@ -32,6 +32,16 @@ func TestQuotesSortedQuotes(t *testing.T) {
 	}
 }
 
+func TestQuotesSortedQuotesKeepsInput(t *testing.T) {
+	ss := []string{"foo", "bar", "piyo"}
+	if have, want := sortedQuotes(ss), `"bar", "foo", "piyo"`; have != want {
+		t.Errorf("want: %s\nhave: %s", want, have)
+	}
+	if ss[0] != "foo" || ss[1] != "bar" || ss[2] != "piyo" {
+		t.Errorf("input slice was modified: %v", ss)
+	}
+}
+
 func TestQuotesQuotesRunes(t *testing.T) {
 	testCases := [][]rune{
 		{},

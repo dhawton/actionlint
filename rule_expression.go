@@ -23,6 +23,7 @@ type RuleExpression struct {
 	stepsTy          *ObjectType
 	needsTy          *ObjectType
 	secretsTy        *ObjectType
+	declaredSecrets  []string
 	inputsTy         *ObjectType
 	dispatchInputsTy *ObjectType
 	jobsTy           *ObjectType
@@ -42,6 +43,7 @@ func NewRuleExpression(actionsCache *LocalActionsCache, workflowCache *LocalReus
 		stepsTy:          nil,
 		needsTy:          nil,
 		secretsTy:        nil,
+		declaredSecrets:  nil,
 		inputsTy:         nil,
 		dispatchInputsTy: nil,
 		jobsTy:           nil,
@@ -53,6 +55,14 @@ func NewRuleExpression(actionsCache *LocalActionsCache, workflowCache *LocalReus
 
 // VisitWorkflowPre is callback when visiting Workflow node before visiting its children.
 func (rule *RuleExpression) VisitWorkflowPre(n *Workflow) error {
+	// Secrets declared at `on.workflow_call.secrets` are always allowed by the `config-secrets` check. This is necessary
+	// when other events can also trigger the workflow since `secrets` is not strictly typed in the case.
+	if e, ok := n.FindWorkflowCallEvent(); ok {
+		for id := range e.Secrets {
+			rule.declaredSecrets = append(rule.declaredSecrets, id)
+		}
+	}
+
 	rule.checkString(n.Name, "")
 
 	for _, e := range n.On {
@@ -191,6 +201,7 @@ func (rule *RuleExpression) VisitWorkflowPost(n *Workflow) error {
 		rule.checkWorkflowCallOutputs(e.Outputs, n.Jobs)
 	}
 	rule.workflow = nil
+	rule.declaredSecrets = nil
 	return nil
 }
 
@@ -783,10 +794,13 @@ func (rule *RuleExpression) exprError(err *ExprError, lineBase, colBase int) {
 
 func (rule *RuleExpression) checkSemanticsOfExprNode(expr ExprNode, line, col int, checkUntrusted bool, workflowKey string) (ExprType, bool) {
 	var v []string
+	var s []string
 	if rule.config != nil {
 		v = rule.config.ConfigVariables
+		s = rule.config.ConfigSecrets
 	}
 	c := NewExprSemanticsChecker(checkUntrusted, v)
+	c.SetConfigSecrets(s, rule.declaredSecrets)
 	if rule.matrixTy != nil {
 		c.UpdateMatrix(rule.matrixTy)
 	}

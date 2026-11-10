@@ -397,6 +397,8 @@ type ExprSemanticsChecker struct {
 	availableContexts     []string
 	availableSpecialFuncs []string
 	configVars            []string
+	configSecrets         []string
+	declaredSecrets       []string
 }
 
 // NewExprSemanticsChecker creates new ExprSemanticsChecker instance. When checkUntrustedInput is
@@ -413,6 +415,15 @@ func NewExprSemanticsChecker(checkUntrustedInput bool, configVars []string) *Exp
 		c.untrusted = NewUntrustedInputChecker(BuiltinUntrustedInputs)
 	}
 	return c
+}
+
+// SetConfigSecrets sets the names of secrets allowed at `secrets.*` property access. When names is nil,
+// property names of `secrets` are not checked. Otherwise a name which is not in names is reported. Names are
+// compared case-insensitively. `GITHUB_TOKEN` and the names in declared are always allowed. declared is
+// for the secrets declared at `on.workflow_call.secrets` of the workflow.
+func (sema *ExprSemanticsChecker) SetConfigSecrets(names []string, declared []string) {
+	sema.configSecrets = names
+	sema.declaredSecrets = declared
 }
 
 func errorAtExpr(e ExprNode, msg string) *ExprError {
@@ -642,8 +653,13 @@ func (sema *ExprSemanticsChecker) checkObjectDeref(n *ObjectDerefNode) ExprType 
 			return t
 		}
 		if ty.Mapped != nil {
-			if v, ok := n.Receiver.(*VariableNode); ok && v.Name == "vars" {
-				sema.checkConfigVariables(n)
+			if v, ok := n.Receiver.(*VariableNode); ok {
+				switch v.Name {
+				case "vars":
+					sema.checkConfigVariables(n)
+				case "secrets":
+					sema.checkConfigSecrets(n)
+				}
 			}
 			return ty.Mapped
 		}
@@ -733,6 +749,42 @@ func (sema *ExprSemanticsChecker) checkConfigVariables(n *ObjectDerefNode) {
 		"undefined configuration variable %q. defined configuration variables in actionlint.yaml are %s",
 		n.Property,
 		sortedQuotes(sema.configVars),
+	)
+}
+
+func (sema *ExprSemanticsChecker) checkConfigSecrets(n *ObjectDerefNode) {
+	if sema.configSecrets == nil {
+		return
+	}
+	// Note: `n.Property` was already converted to lower case by parser
+	if n.Property == "github_token" {
+		return
+	}
+	for _, s := range sema.declaredSecrets {
+		if strings.EqualFold(s, n.Property) {
+			return
+		}
+	}
+	for _, s := range sema.configSecrets {
+		if strings.EqualFold(s, n.Property) {
+			return
+		}
+	}
+
+	if len(sema.configSecrets) == 0 {
+		sema.errorf(
+			n,
+			"secret %q is not in \"config-secrets\" in actionlint.yaml, which is empty. add the secret to \"config-secrets\" if it is defined in your repository, organization, or environment",
+			n.Property,
+		)
+		return
+	}
+
+	sema.errorf(
+		n,
+		"secret %q is not in \"config-secrets\" in actionlint.yaml. add the secret to \"config-secrets\" if it is defined in your repository, organization, or environment. listed secrets are %s",
+		n.Property,
+		sortedQuotes(sema.configSecrets),
 	)
 }
 
