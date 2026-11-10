@@ -248,7 +248,7 @@ func (c *LocalReusableWorkflowCache) convWorkflowPathToSpec(p string) (string, b
 		p = filepath.Join(c.cwd, p)
 	}
 	r := c.proj.RootDir()
-	if !strings.HasPrefix(p, r) {
+	if !isPathInDir(filepath.Clean(p), r) {
 		return "", false
 	}
 	p, err := filepath.Rel(r, p)

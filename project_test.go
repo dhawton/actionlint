@@ -149,3 +149,28 @@ func TestProjectsLoadingBrokenProjectConfig(t *testing.T) {
 		t.Fatalf("wanted error %q but have error %q", want, msg)
 	}
 }
+
+func TestProjectKnowsOnlyFilesInRootDir(t *testing.T) {
+	root, err := filepath.Abs(filepath.Join("path", "to", "repo"))
+	if err != nil {
+		panic(err)
+	}
+	p := &Project{root, nil}
+	tests := []struct {
+		path string
+		want bool
+	}{
+		{root, true},
+		{filepath.Join(root, ".github", "workflows", "ci.yaml"), true},
+		{filepath.Join(root, "..foo", "ci.yaml"), true},
+		{filepath.Join(root+"-other", ".github", "workflows", "ci.yaml"), false},
+		{root + "-other", false},
+		{filepath.Dir(root), false},
+		{filepath.Join(filepath.Dir(root), "other", "ci.yaml"), false},
+	}
+	for _, tc := range tests {
+		if got := p.Knows(tc.path); got != tc.want {
+			t.Errorf("Knows(%q) = %v but wanted %v (root=%q)", tc.path, got, tc.want, root)
+		}
+	}
+}
