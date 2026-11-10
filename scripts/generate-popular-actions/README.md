@@ -26,6 +26,14 @@ Detect new releases on GitHub:
 go run ./scripts/generate-popular-actions -d
 ```
 
+Add the detected new releases to the registry file, then generate Go source with them. The weekly
+[Generate workflow](../../.github/workflows/generate.yaml) does this and opens a pull request:
+
+```sh
+go run ./scripts/generate-popular-actions -d -u -r ./scripts/generate-popular-actions/popular_actions.json
+go run ./scripts/generate-popular-actions ./popular_actions.go
+```
+
 Please see output of `-help` flag for more details.
 
 ## The data source file
