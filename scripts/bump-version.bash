@@ -2,7 +2,7 @@
 
 set -e -o pipefail
 
-if [ ! -d .git ]; then
+if [ ! -e .git ]; then
     echo 'This script must be run from repository root' 1>&2
     echo 'Usage: bash ./scripts/bump-version.bash 1.2.3' 1>&2
     exit 1
