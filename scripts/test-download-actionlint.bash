@@ -3,7 +3,7 @@
 set -o pipefail
 set -e
 
-if [ ! -d .git ]; then
+if [ ! -e .git ]; then
     echo 'This script must be run from root of repository' >&2
     exit 1
 fi
@@ -33,9 +33,9 @@ fi
 rm -f ./actionlint
 
 # Specify only version
-bash "$script" '1.8.1'
+bash "$script" '1.9.0'
 out="$(./actionlint -version | head -n 1)"
-if [[ "$out" != '1.8.1' ]]; then
+if [[ "$out" != '1.9.0' ]]; then
     echo "Unexpected version: '${out}'" 1>&2
     exit 1
 fi
@@ -53,9 +53,9 @@ rm -rf ./test1
 
 # Specify both version and a download directory
 mkdir ./test2
-bash "$script" '1.8.1' ./test2
+bash "$script" '1.9.0' ./test2
 out="$(./test2/actionlint -version | head -n 1)"
-if [[ "$out" != '1.8.1' ]]; then
+if [[ "$out" != '1.9.0' ]]; then
     echo "Unexpected version: '${out}'" 1>&2
     exit 1
 fi
