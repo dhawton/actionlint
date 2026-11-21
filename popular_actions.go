@@ -1409,8 +1409,17 @@ var PopularActions = map[string]*ActionMetadata{
 			"token":                 {"token", false, false, ""},
 		},
 		Outputs: ActionMetadataOutputs{
-			"cache-hit":  {"cache-hit"},
-			"go-version": {"go-version"},
+			"cache-hit":   {"cache-hit"},
+			"go-bin-path": {"go-bin-path"},
+			"go-version":  {"go-version"},
+			"goarch":      {"GOARCH"},
+			"gobin":       {"GOBIN"},
+			"gocache":     {"GOCACHE"},
+			"gomodcache":  {"GOMODCACHE"},
+			"goos":        {"GOOS"},
+			"gopath":      {"GOPATH"},
+			"goroot":      {"GOROOT"},
+			"gotooldir":   {"GOTOOLDIR"},
 		},
 	},
 	"actions/setup-java@v4": {
@@ -2008,6 +2017,7 @@ var PopularActions = map[string]*ActionMetadata{
 		Name: "Claude Code Action v1.0",
 		Inputs: ActionMetadataInputs{
 			"additional_permissions":         {"additional_permissions", false, false, ""},
+			"allow_fork_prs":                 {"allow_fork_prs", false, false, ""},
 			"allowed_bots":                   {"allowed_bots", false, false, ""},
 			"allowed_non_write_users":        {"allowed_non_write_users", false, false, ""},
 			"anthropic_api_key":              {"anthropic_api_key", false, false, ""},
@@ -5455,8 +5465,10 @@ var PopularActions = map[string]*ActionMetadata{
 	"peaceiris/actions-hugo@v3": {
 		Name: "Hugo setup",
 		Inputs: ActionMetadataInputs{
-			"extended":     {"extended", false, false, ""},
-			"hugo-version": {"hugo-version", false, false, ""},
+			"dart-sass-version": {"dart-sass-version", false, false, ""},
+			"extended":          {"extended", false, false, ""},
+			"github-token":      {"github-token", false, false, ""},
+			"hugo-version":      {"hugo-version", false, false, ""},
 		},
 	},
 	"peter-evans/create-or-update-comment@v4": {
